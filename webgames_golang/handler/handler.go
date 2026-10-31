@@ -7,10 +7,12 @@ import (
     "strconv"
 
     "webgames_golang/store"
+    "webgames_golang/auth"
 )
 
 type Handler struct {
     Store *store.Store
+    Tickets *auth.Issuer
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -36,8 +38,8 @@ func pathID(r *http.Request, name string) (int64, bool) {
     return id, err == nil && id > 0
 }
 
-func (h *Handler) SearchCouponPackage(w http.ResponseWriter, r *http.Request) {
-    items, err := h.Store.SearchCouponPackage(r.Context(), r.URL.Query().Get("q"))
+func (h *Handler) SearchCouponPackages(w http.ResponseWriter, r *http.Request) {
+    items, err := h.Store.SearchCouponPackages(r.Context(), r.URL.Query().Get("q"))
     if err != nil {
         internal(w, err)
         return

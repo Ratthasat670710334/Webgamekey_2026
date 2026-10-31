@@ -5,15 +5,21 @@ import (
     "log"
     "net/http"
     "os"
+    "time"
 
     "github.com/jackc/pgx/v5/pgxpool"
 
+    "webgames_golang/auth"
     "webgames_golang/handler"
     "webgames_golang/mw"
     "webgames_golang/store"
 )
 
 func main() {
+    secret := os.Getenv("JWT_SECRET")
+    if len(secret) < 32 {
+        log.Fatal("JWT_SECRET ต้องยาวอย่างน้อย 32 ตัวอักษร")
+    }
     pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
     if err != nil {
         log.Fatal(err)
@@ -23,10 +29,14 @@ func main() {
         log.Fatal("ต่อฐานข้อมูลไม่ติด ", err)
     }
 
-    h := &handler.Handler{Store: &store.Store{Pool: pool}}
+    tickets := &auth.Issuer{Secret: []byte(secret), TTL: time.Hour}
+    h := &handler.Handler{Store: &store.Store{Pool: pool}, Tickets: tickets}
 
     mux := http.NewServeMux()
-    mux.HandleFunc("GET /api/webgames_key", h.SearchCouponPackage)
+
+    mux.HandleFunc("POST /api/auth/register", h.Register)
+    mux.HandleFunc("POST /api/auth/login", h.Login)
+    mux.HandleFunc("GET /api/webgames_key", h.SearchCouponPackages)
     mux.HandleFunc("GET /api/webgames_key/{id}/Orders", h.ListOrders)
 
     log.Println("เว็บขายคูปองเกม API ฟังอยู่ที่ :8080")

@@ -18,6 +18,7 @@ psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c ""
 
 
 export DATABASE_URL="postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db"
+export JWT_SECRET=$(cat .jwt_secret)
 go run .
 
 
@@ -29,3 +30,4 @@ FROM coupon_packages
 WHERE is_active = TRUE;"
 
 
+psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "SELECT * FROM users;"

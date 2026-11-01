@@ -31,9 +31,13 @@ func main() {
 
     tickets := &auth.Issuer{Secret: []byte(secret), TTL: time.Hour}
     h := &handler.Handler{Store: &store.Store{Pool: pool}, Tickets: tickets}
+    login := func(f http.HandlerFunc) http.HandlerFunc { return mw.RequireLogin(tickets, f) }
+
 
     mux := http.NewServeMux()
 
+    mux.HandleFunc("GET /api/me", login(h.Me))
+    mux.HandleFunc("POST /api/movies/{id}/reviews", login(h.BuyCoupon))
     mux.HandleFunc("POST /api/auth/register", h.Register)
     mux.HandleFunc("POST /api/auth/login", h.Login)
     mux.HandleFunc("GET /api/webgames_key", h.SearchCouponPackages)

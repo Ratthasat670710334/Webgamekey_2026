@@ -6,8 +6,8 @@
 docker compose up -d
 
 -2 ติดตั้ง
-
 sudo apt-get update && sudo apt-get install -y postgresql-client
+
 psql "postgres://postgres:pg_670710334@127.0.0.1:5432/postgres" -c "CREATE DATABASE webgames_db"
 
 

@@ -44,3 +44,15 @@ func (s *Store) UserByEmail(ctx context.Context, email string) (User, error) {
     }
     return m, err
 }
+
+
+func (s *Store) UserByID(ctx context.Context, id int64) (User, error) {
+    var u User
+    err := s.Pool.QueryRow(ctx,
+        `SELECT user_id, email, username, role FROM users WHERE user_id = $1`, id).
+        Scan(&u.ID, &u.Email, &u.Username, &u.Role)
+    if errors.Is(err, pgx.ErrNoRows) {
+        return User{}, ErrNotFound
+    }
+    return u, err
+}

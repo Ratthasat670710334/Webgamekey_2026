@@ -6,6 +6,7 @@ import (
     "net/http"
     "os"
     "time"
+    "strings"
 
     "github.com/jackc/pgx/v5/pgxpool"
 
@@ -37,12 +38,16 @@ func main() {
     mux := http.NewServeMux()
 
     mux.HandleFunc("GET /api/me", login(h.Me))
-    mux.HandleFunc("POST /api/movies/{id}/reviews", login(h.BuyCoupon))
+    mux.HandleFunc("POST /api/coupons/{id}/buy", login(h.BuyCoupon))
     mux.HandleFunc("POST /api/auth/register", h.Register)
     mux.HandleFunc("POST /api/auth/login", h.Login)
     mux.HandleFunc("GET /api/webgames_key", h.SearchCouponPackages)
     mux.HandleFunc("GET /api/webgames_key/{id}/Orders", h.ListOrders)
 
-    log.Println("เว็บขายคูปองเกม API ฟังอยู่ที่ :8080")
-    log.Fatal(http.ListenAndServe(":8080", mw.Logging(mux)))
+    mux.HandleFunc("DELETE /api/deletecoupons/{CouponId}", login(h.DeleteCoupon))
+    mux.HandleFunc("GET /api/admin/members", login(mw.RequireRole("admin", h.AdminMembers)))
+
+    origins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+    log.Println("MovieHub API ฟังอยู่ที่ :8080 ต้อนรับ", origins)
+    log.Fatal(http.ListenAndServe(":8080", mw.Logging(mw.CORS(origins, mux))))
 }

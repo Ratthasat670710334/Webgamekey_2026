@@ -47,3 +47,53 @@ func RequireLogin(iss *auth.Issuer, next http.HandlerFunc) http.HandlerFunc {
         next(w, r.WithContext(ctx))
     }
 }
+
+
+// RequireRole ใช้ต่อจาก RequireLogin บทบาทไม่ตรง ตอบ 403
+func RequireRole(role string, next http.HandlerFunc) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        if WhoFrom(r.Context()).Role != role {
+            deny(w, http.StatusForbidden, "FORBIDDEN", "บัญชีนี้ไม่มีสิทธิ์ทำรายการนี้")
+            return
+        }
+        next(w, r)
+    }
+}
+
+
+
+
+//ยังไม่เสร็จ
+func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
+    rows, err := s.Pool.Query(ctx,
+        `SELECT id, email, display_name, role FROM members ORDER BY id`)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    out := []Member{}
+    for rows.Next() {
+        var m Member
+        if err := rows.Scan(&m.ID, &m.Email, &m.DisplayName, &m.Role); err != nil {
+            return nil, err
+        }
+        out = append(out, m)
+    }
+    return out, rows.Err()
+}
+
+
+
+// DeleteReview ลบได้เมื่อเป็นเจ้าของรีวิว หรือเป็นแอดมิน
+func (s *Store) DeleteCoupon(ctx context.Context, reviewID, memberID int64, isAdmin bool) error {
+    tag, err := s.Pool.Exec(ctx,
+        `DELETE FROM reviews
+         WHERE id = $1 AND (member_id = $2 OR $3)`, reviewID, memberID, isAdmin)
+    if err != nil {
+        return err
+    }
+    if tag.RowsAffected() == 0 {
+        return ErrNotFound
+    }
+    return nil
+}

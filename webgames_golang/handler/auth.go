@@ -86,3 +86,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
     }
     writeJSON(w, http.StatusOK, map[string]any{"token": token, "member": m})
 }
+
+
+// dummyHash คือลายนิ้วมือหลอก ใช้เทียบเมื่อไม่พบอีเมล เพื่อให้เสียเวลาเท่ากัน
+var dummyHash, _ = auth.HashPassword("ไม่มีใครใช้รหัสนี้")
+
+// ... ใน Login ตรงที่ไม่พบอีเมล ...
+if errors.Is(err, store.ErrNotFound) {
+    auth.CheckPassword(dummyHash, req.Password) // เสียเวลาเท่ากับกรณีรหัสผิด
+    writeError(w, http.StatusUnauthorized, "BAD_CREDENTIALS", "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
+    return
+}

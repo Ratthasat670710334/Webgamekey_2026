@@ -22,6 +22,8 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, m)
 }
 
+
+
 func (h *Handler) BuyCoupon(w http.ResponseWriter, r *http.Request) {
 	packageID, ok := pathID(r, "id")
 	if !ok {
@@ -45,25 +47,3 @@ func (h *Handler) BuyCoupon(w http.ResponseWriter, r *http.Request) {
 
 
 
-
-
-
-
-func (h *Handler) DeleteReview(w http.ResponseWriter, r *http.Request) {
-    reviewID, ok := pathID(r, "reviewId")
-    if !ok {
-        writeError(w, http.StatusBadRequest, "BAD_ID", "เลขรีวิวต้องเป็นตัวเลข")
-        return
-    }
-    who := mw.WhoFrom(r.Context())
-    err := h.Store.DeleteReview(r.Context(), reviewID, who.ID, who.Role == "admin")
-    if errors.Is(err, store.ErrNotFound) {
-        writeError(w, http.StatusNotFound, "REVIEW_NOT_FOUND", "ไม่พบรีวิวนี้")
-        return
-    }
-    if err != nil {
-        internal(w, err)
-        return
-    }
-    w.WriteHeader(http.StatusNoContent)
-}

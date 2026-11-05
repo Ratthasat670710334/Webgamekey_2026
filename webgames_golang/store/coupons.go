@@ -36,3 +36,19 @@ func (s *Store) SearchCouponPackages(ctx context.Context, q string) ([]CouponPac
     }
     return out, rows.Err()
 }
+
+
+
+// DeleteCoupon ลบได้เมื่อเป็นแอดมิน
+/*func (s *Store) DeleteCoupon(ctx context.Context, reviewID, memberID int64, isAdmin bool) error {
+    tag, err := s.Pool.Exec(ctx,
+        `DELETE FROM coupon_packages
+         WHERE id = $1 AND (member_id = $2 OR $3)`, package_id, memberID, isAdmin)
+    if err != nil {
+        return err
+    }
+    if tag.RowsAffected() == 0 {
+        return ErrNotFound
+    }
+    return nil
+}*/

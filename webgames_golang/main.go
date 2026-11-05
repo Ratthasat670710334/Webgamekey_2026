@@ -44,8 +44,9 @@ func main() {
     mux.HandleFunc("GET /api/webgames_key", h.SearchCouponPackages)
     mux.HandleFunc("GET /api/webgames_key/{id}/Orders", h.ListOrders)
 
-    mux.HandleFunc("DELETE /api/deletecoupons/{CouponId}", login(h.DeleteCoupon))
-    mux.HandleFunc("GET /api/admin/members", login(mw.RequireRole("admin", h.AdminMembers)))
+    //mux.HandleFunc("DELETE /api//admin/coupons/deletecoupons/{CouponId}", login(h.DeleteCoupon))
+
+    mux.HandleFunc("GET /api/admin/members", login(mw.RequireRole("admin", h.AdminUser)))
 
     origins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
     log.Println("MovieHub API ฟังอยู่ที่ :8080 ต้อนรับ", origins)

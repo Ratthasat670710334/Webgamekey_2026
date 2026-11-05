@@ -56,3 +56,25 @@ func (s *Store) UserByID(ctx context.Context, id int64) (User, error) {
     }
     return u, err
 }
+
+
+
+
+
+func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
+    rows, err := s.Pool.Query(ctx,
+        `SELECT user_id, email, username, role FROM users ORDER BY id`)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    out := []User{}
+    for rows.Next() {
+        var u User
+        if err := rows.Scan(&u.ID, &u.Email, &u.Username, &u.Role); err != nil {
+            return nil, err
+        }
+        out = append(out, u)
+    }
+    return out, rows.Err()
+}

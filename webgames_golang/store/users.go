@@ -63,7 +63,7 @@ func (s *Store) UserByID(ctx context.Context, id int64) (User, error) {
 
 func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
     rows, err := s.Pool.Query(ctx,
-        `SELECT user_id, email, username, role FROM users ORDER BY id`)
+        `SELECT user_id, email, username, role FROM users ORDER BY user_id`)
     if err != nil {
         return nil, err
     }

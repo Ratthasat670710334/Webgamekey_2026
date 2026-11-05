@@ -1,83 +1,62 @@
 package handler
 
 import (
-    "encoding/json"
-    "log"
-    "net/http"
-    "strconv"
+	"encoding/json"
+	"log"
+	"net/http"
+	"strconv"
 
-    "webgames_golang/store"
-    "webgames_golang/auth"
+	"webgames_golang/auth"
+	"webgames_golang/store"
 )
 
 type Handler struct {
-    Store *store.Store
-    Tickets *auth.Issuer
+	Store   *store.Store
+	Tickets *auth.Issuer
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(status)
-    json.NewEncoder(w).Encode(v)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(v)
 }
 
 func writeError(w http.ResponseWriter, status int, code, message string) {
-    writeJSON(w, status, map[string]any{
-        "error": map[string]string{"code": code, "message": message},
-    })
+	writeJSON(w, status, map[string]any{
+		"error": map[string]string{"code": code, "message": message},
+	})
 }
 
 // internal จดรายละเอียดไว้ใน log ฝั่งเรา แต่บอกผู้ใช้แค่ว่าระบบขัดข้อง
 func internal(w http.ResponseWriter, err error) {
-    log.Printf("internal error: %v", err)
-    writeError(w, http.StatusInternalServerError, "INTERNAL", "ระบบขัดข้อง ลองใหม่อีกครั้ง")
+	log.Printf("internal error: %v", err)
+	writeError(w, http.StatusInternalServerError, "INTERNAL", "ระบบขัดข้อง ลองใหม่อีกครั้ง")
 }
 
 func pathID(r *http.Request, name string) (int64, bool) {
-    id, err := strconv.ParseInt(r.PathValue(name), 10, 64)
-    return id, err == nil && id > 0
+	id, err := strconv.ParseInt(r.PathValue(name), 10, 64)
+	return id, err == nil && id > 0
 }
 
 func (h *Handler) SearchCouponPackages(w http.ResponseWriter, r *http.Request) {
-    items, err := h.Store.SearchCouponPackages(r.Context(), r.URL.Query().Get("q"))
-    if err != nil {
-        internal(w, err)
-        return
-    }
-    writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	items, err := h.Store.SearchCouponPackages(r.Context(), r.URL.Query().Get("q"))
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
 func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
-    orderID, ok := pathID(r, "id")
-    if !ok {
-        writeError(w, http.StatusBadRequest, "BAD_ID", "เลขออเดอร์ต้องเป็นตัวเลข")
-        return
-    }
-    items, err := h.Store.ListOrders(r.Context(), orderID)
-    if err != nil {
-        internal(w, err)
-        return
-    }
-    writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	orderID, ok := pathID(r, "id")
+	if !ok {
+		writeError(w, http.StatusBadRequest, "BAD_ID", "เลขออเดอร์ต้องเป็นตัวเลข")
+		return
+	}
+	items, err := h.Store.ListOrders(r.Context(), orderID)
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
-
-
-/*
-func (h *Handler) DeleteReview(w http.ResponseWriter, r *http.Request) {
-    reviewID, ok := pathID(r, "reviewId")
-    if !ok {
-        writeError(w, http.StatusBadRequest, "BAD_ID", "เลขรีวิวต้องเป็นตัวเลข")
-        return
-    }
-    who := mw.WhoFrom(r.Context())
-    err := h.Store.DeleteReview(r.Context(), reviewID, who.ID, who.Role == "admin")
-    if errors.Is(err, store.ErrNotFound) {
-        writeError(w, http.StatusNotFound, "REVIEW_NOT_FOUND", "ไม่พบรีวิวนี้")
-        return
-    }
-    if err != nil {
-        internal(w, err)
-        return
-    }
-    w.WriteHeader(http.StatusNoContent)
-}*/

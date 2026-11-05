@@ -50,7 +50,7 @@ func (h *Handler) BuyCoupon(w http.ResponseWriter, r *http.Request) {
 
 
 
-
+/*
 func (h *Handler) DeleteReview(w http.ResponseWriter, r *http.Request) {
     reviewID, ok := pathID(r, "reviewId")
     if !ok {
@@ -68,4 +68,4 @@ func (h *Handler) DeleteReview(w http.ResponseWriter, r *http.Request) {
         return
     }
     w.WriteHeader(http.StatusNoContent)
-}
+}*/

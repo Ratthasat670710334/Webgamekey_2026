@@ -22,6 +22,15 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, m)
 }
 
+func (h *Handler) SearchCouponPackages(w http.ResponseWriter, r *http.Request) {
+	items, err := h.Store.SearchCouponPackages(r.Context(), r.URL.Query().Get("q"))
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
 func (h *Handler) BuyCoupon(w http.ResponseWriter, r *http.Request) {
 	packageID, ok := pathID(r, "id")
 	if !ok {

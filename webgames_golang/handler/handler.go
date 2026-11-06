@@ -37,26 +37,3 @@ func pathID(r *http.Request, name string) (int64, bool) {
 	id, err := strconv.ParseInt(r.PathValue(name), 10, 64)
 	return id, err == nil && id > 0
 }
-
-func (h *Handler) SearchCouponPackages(w http.ResponseWriter, r *http.Request) {
-	items, err := h.Store.SearchCouponPackages(r.Context(), r.URL.Query().Get("q"))
-	if err != nil {
-		internal(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
-}
-
-func (h *Handler) ListOrders(w http.ResponseWriter, r *http.Request) {
-	orderID, ok := pathID(r, "id")
-	if !ok {
-		writeError(w, http.StatusBadRequest, "BAD_ID", "เลขออเดอร์ต้องเป็นตัวเลข")
-		return
-	}
-	items, err := h.Store.ListOrders(r.Context(), orderID)
-	if err != nil {
-		internal(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
-}

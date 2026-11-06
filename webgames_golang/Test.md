@@ -18,7 +18,7 @@ psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "DELETE FR
 
 
 
-export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY3VzdG9tZXIiLCJzdWIiOiIxMSIsImV4cCI6MTc5Mzg5NDI5MSwiaWF0IjoxNzkzODkwNjkxfQ.nieFrdXs6GE8AD-AO0BoQ7JQrlXVW-7jjkLm-ZD3pao
+export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY3VzdG9tZXIiLCJzdWIiOiIxMSIsImV4cCI6MTc5Mzk0Njc2OCwiaWF0IjoxNzkzOTQzMTY4fQ.y3ycbAVVidbju1tzSGGAYTzlA1enTgqDg-99AexLG8c
 
 
 

@@ -8,11 +8,24 @@ import (
 	"webgames_golang/store"
 )
 
-func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
-	who := mw.WhoFrom(r.Context())
-	m, err := h.Store.UserByID(r.Context(), who.ID)
+func (h *Handler) GetCoupon(w http.ResponseWriter, r *http.Request) {
+	items, err := h.Store.GetCoupon(r.Context())
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+func (h *Handler) GetCouponDetail(w http.ResponseWriter, r *http.Request) {
+	id, ok := pathID(r, "id")
+	if !ok {
+		writeError(w, http.StatusBadRequest, "BAD_ID", "เลขหนังต้องเป็นตัวเลข")
+		return
+	}
+	m, err := h.Store.GetCouponDetail(r.Context(), id)
 	if errors.Is(err, store.ErrNotFound) {
-		writeError(w, http.StatusUnauthorized, "LOGIN_REQUIRED", "กรุณาเข้าสู่ระบบก่อน")
+		writeError(w, http.StatusNotFound, "COUPON_NOT_FOUND", "ไม่พบคูปองนี้")
 		return
 	}
 	if err != nil {
@@ -20,15 +33,6 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, m)
-}
-
-func (h *Handler) SearchCouponPackages(w http.ResponseWriter, r *http.Request) {
-	items, err := h.Store.SearchCouponPackages(r.Context(), r.URL.Query().Get("q"))
-	if err != nil {
-		internal(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
 func (h *Handler) BuyCoupon(w http.ResponseWriter, r *http.Request) {

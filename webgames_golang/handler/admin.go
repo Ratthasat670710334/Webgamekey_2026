@@ -1,6 +1,8 @@
 package handler
 
-import "net/http"
+import (
+	"net/http"
+)
 
 func (h *Handler) AdminUser(w http.ResponseWriter, r *http.Request) {
 	ms, err := h.Store.ListUsers(r.Context())

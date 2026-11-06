@@ -2,17 +2,33 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
 
 	"webgames_golang/auth"
+	"webgames_golang/mw"
 	"webgames_golang/store"
 )
 
 type Handler struct {
 	Store   *store.Store
 	Tickets *auth.Issuer
+}
+
+func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
+	who := mw.WhoFrom(r.Context())
+	m, err := h.Store.UserByID(r.Context(), who.ID)
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusUnauthorized, "LOGIN_REQUIRED", "กรุณาเข้าสู่ระบบก่อน")
+		return
+	}
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, m)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

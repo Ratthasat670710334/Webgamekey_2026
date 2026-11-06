@@ -28,7 +28,7 @@ type Orders struct {
 	User          OrderUser `json:"user"`
 }
 
-func (s *Store) ListOrders(ctx context.Context, orderID int64) ([]Orders, error) {
+func (s *Store) Orders(ctx context.Context, orderID int64) ([]Orders, error) {
 	rows, err := s.Pool.Query(ctx,
 		`SELECT o.order_id ,
     			o.user_id ,

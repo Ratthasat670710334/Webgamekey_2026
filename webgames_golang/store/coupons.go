@@ -21,14 +21,39 @@ type CouponPackage struct {
 }
 
 // SearchCouponPackage ค่าจากผู้ใช้เดินทางผ่าน $1 แยกจากคำสั่งเสมอ
-func (s *Store) SearchCouponPackages(ctx context.Context, q string) ([]CouponPackage, error) {
+func (s *Store) GetCoupon(ctx context.Context) ([]CouponPackage, error) {
+	rows, err := s.Pool.Query(ctx,
+
+		`
+		
+		SELECT package_id, title ,price
+		FROM coupon_packages
+		`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []CouponPackage{}
+
+	for rows.Next() {
+		var c CouponPackage
+		if err := rows.Scan(&c.PackageID, &c.Title, &c.Price); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// SearchCouponPackage ค่าจากผู้ใช้เดินทางผ่าน $1 แยกจากคำสั่งเสมอ
+func (s *Store) GetCouponDetail(ctx context.Context, id int64) ([]CouponPackage, error) {
 	rows, err := s.Pool.Query(ctx,
 
 		`
 		
 		SELECT package_id ,game_name, title, description ,price, max_per_user
 		FROM coupon_packages
-			WHERE lower(game_name) LIKE  lower($1)`, q)
+			WHERE package_id =$1`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -43,21 +68,6 @@ func (s *Store) SearchCouponPackages(ctx context.Context, q string) ([]CouponPac
 		out = append(out, c)
 	}
 	return out, rows.Err()
-}
-
-// DeleteCoupon ลบได้เมื่อเป็นแอดมิน
-func (s *Store) DeleteCoupon(ctx context.Context, packageID int64) error {
-	tag, err := s.Pool.Exec(ctx,
-		`
-        DELETE FROM coupon_packages cp
-         WHERE cp.package_id = $1 `, packageID)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return ErrNotFound
-	}
-	return nil
 }
 
 func (s *Store) BuyCoupon(ctx context.Context, userID int64, packageID int64) (string, error) {
@@ -121,4 +131,19 @@ func (s *Store) BuyCoupon(ctx context.Context, userID int64, packageID int64) (s
 	}
 
 	return couponCode, nil
+}
+
+// DeleteCoupon ลบได้เมื่อเป็นแอดมิน
+func (s *Store) DeleteCoupon(ctx context.Context, packageID int64) error {
+	tag, err := s.Pool.Exec(ctx,
+		`
+        DELETE FROM coupon_packages cp
+         WHERE cp.package_id = $1 `, packageID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }

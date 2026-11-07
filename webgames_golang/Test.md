@@ -21,17 +21,30 @@ psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "DELETE FR
 
 psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "SELECT * FROM users;"
 psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "SELECT * FROM coupon_packages;"
-psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "SELECT * FROM orders;"
+psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "SELECT * FROM orders;" 
+psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "SELECT * FROM coupon_codes;"
+
+psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "DROP TABLE orders;"
+psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id),
+    code_id INT NOT NULL UNIQUE REFERENCES coupon_codes(code_id), -- UNIQUE เพื่อป้องกันการขายโค้ดซ้ำ
+    purchase_price NUMERIC(10, 2) NOT NULL,
+    purchased_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);"
 
 
 
-export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY3VzdG9tZXIiLCJzdWIiOiIxMiIsImV4cCI6MTc5Mzk5MTE5NCwiaWF0IjoxNzkzOTg3NTk0fQ.T6NnD0Py6Av4_AI-4L8d8WaYPFahsKw1A9MMBmgYGGY
 
 
+export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY3VzdG9tZXIiLCJzdWIiOiI2IiwiZXhwIjoxNzk0MDUxMTM5LCJpYXQiOjE3OTQwNDc1Mzl9.fvOdUF2H-Cs3Y9mPjikkOVVNPDIShQy1nn99PQvBEhY
 
+cd webgames_db
 docker compose up -d
 sudo apt-get update && sudo apt-get install -y postgresql-client
 
+
+cd webgames_golang
 export DATABASE_URL="postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db"
 export JWT_SECRET=$(cat .jwt_secret)
 export ALLOWED_ORIGINS=http://localhost:3000
@@ -44,7 +57,7 @@ curl -i -X POST 'http://localhost:8080/api/coupons/1/buy' \
   -H "Authorization: Bearer $TOKEN"
 
 
-  curl -i -X GET 'http://localhost:8080/api/admin/members' \
+  curl -i -X GET 'http://localhost:8080/api/admin/users' \
   -H "Authorization: Bearer $TOKEN"
 
 
@@ -70,16 +83,31 @@ curl -i -X POST 'http://localhost:8080/api/coupons/1/buy' \
 
 
 
-curl -i -X GET 'http://localhost:8080/api/coupons' \
+curl -i -X GET 'http://localhost:8080/api/coupons' 
+curl -i -X GET 'http://localhost:8080/api/coupons/search?q=100' 
+
+
+
+curl -i -X GET 'http://localhost:8080/api/coupons/1' 
+curl -i -X GET 'http://localhost:8080/api/coupons/aaa' 
+curl -i -X GET 'http://localhost:8080/api/coupons/3' 
+
+
+
+
+
+
+curl -i -X POST 'http://localhost:8080/api/coupons/2/buy' \
+  -H "Authorization: Bearer $TOKEN"
+
+
+curl -i -X GET 'http://localhost:8080/api/users/me/orders' \
 -H "Authorization: Bearer $TOKEN"
 
-curl -i -X GET 'http://localhost:8080/api/coupons/1' \
+
+
+  curl -i -X GET 'http://localhost:8080/api/admin/users' \
 -H "Authorization: Bearer $TOKEN"
 
-curl -i -X GET 'http://localhost:8080/api/users/me/11/orders' \
--H "Authorization: Bearer $TOKEN"
-
-
-
-curl -i -X GET 'http://localhost:8080/api/admin/users' \
+curl -i -X GET 'http://localhost:8080/api/admin/orders' \
 -H "Authorization: Bearer $TOKEN"

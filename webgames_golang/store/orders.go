@@ -28,7 +28,43 @@ type Orders struct {
 	User          OrderUser `json:"user"`
 }
 
-func (s *Store) Orders(ctx context.Context, orderID int64) ([]Orders, error) {
+type OrderbyUser struct {
+	OrderID       int       `json:"order_id"`
+	GameName      string    `json:"game_name"`
+	Title         string    `json:"title"`
+	CouponCode    string    `json:"coupon_code"` // รหัสที่ลูกค้าได้
+	PurchasePrice float64   `json:"purchase_price"`
+	PurchasedAt   time.Time `json:"purchased_at"`
+}
+
+func (s *Store) OrdersByuser(ctx context.Context, userID int64) ([]OrderbyUser, error) {
+	rows, err := s.Pool.Query(ctx,
+		`SELECT o.order_id ,
+    			cp.game_name,
+    			cp.title,
+    			cc.coupon_code,
+    			o.purchase_price ,
+    			o.purchased_at
+				FROM orders o
+				JOIN coupon_codes cc ON cc.code_id =o.code_id 
+				JOIN  coupon_packages cp ON cp.package_id = cc.package_id
+				WHERE o.user_id = $1;`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []OrderbyUser{}
+	for rows.Next() {
+		var o OrderbyUser
+		if err := rows.Scan(&o.OrderID, &o.GameName, &o.Title, &o.CouponCode, &o.PurchasePrice, &o.PurchasedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, o)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) GetOrders(ctx context.Context) ([]Orders, error) {
 	rows, err := s.Pool.Query(ctx,
 		`SELECT o.order_id ,
     			o.user_id ,
@@ -42,7 +78,7 @@ func (s *Store) Orders(ctx context.Context, orderID int64) ([]Orders, error) {
 				JOIN users u ON u.user_id = o.user_id 
 				JOIN coupon_codes cc ON cc.code_id =o.code_id 
 				JOIN  coupon_packages cp ON cp.package_id = cc.package_id
-				WHERE o.order_id = $1 ;`, orderID)
+				;`)
 	if err != nil {
 		return nil, err
 	}

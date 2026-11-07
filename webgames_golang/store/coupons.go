@@ -3,12 +3,19 @@ package store
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	//"log"
 
 	"github.com/jackc/pgx/v5"
 )
+
+var ErrCouponLimitFull = errors.New("coupon purchase limit reached")
+
+type CouponTitle struct {
+	PackageID int     `json:"package_id"`
+	Title     string  `json:"title"`
+	Price     float64 `json:"price"`
+}
 
 type CouponPackage struct {
 	PackageID   int     `json:"package_id"`
@@ -20,12 +27,10 @@ type CouponPackage struct {
 	IsActive    bool    `json:"is_active"`
 }
 
-// SearchCouponPackage ค่าจากผู้ใช้เดินทางผ่าน $1 แยกจากคำสั่งเสมอ
-func (s *Store) GetCoupon(ctx context.Context) ([]CouponPackage, error) {
+func (s *Store) GetCoupon(ctx context.Context) ([]CouponTitle, error) {
 	rows, err := s.Pool.Query(ctx,
 
 		`
-		
 		SELECT package_id, title ,price
 		FROM coupon_packages
 		`)
@@ -33,10 +38,10 @@ func (s *Store) GetCoupon(ctx context.Context) ([]CouponPackage, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	out := []CouponPackage{}
+	out := []CouponTitle{}
 
 	for rows.Next() {
-		var c CouponPackage
+		var c CouponTitle
 		if err := rows.Scan(&c.PackageID, &c.Title, &c.Price); err != nil {
 			return nil, err
 		}
@@ -45,29 +50,44 @@ func (s *Store) GetCoupon(ctx context.Context) ([]CouponPackage, error) {
 	return out, rows.Err()
 }
 
-// SearchCouponPackage ค่าจากผู้ใช้เดินทางผ่าน $1 แยกจากคำสั่งเสมอ
-func (s *Store) GetCouponDetail(ctx context.Context, id int64) ([]CouponPackage, error) {
+// SearchCoupon
+func (s *Store) SearchCoupons(ctx context.Context, q string) ([]CouponTitle, error) {
 	rows, err := s.Pool.Query(ctx,
-
-		`
-		
-		SELECT package_id ,game_name, title, description ,price, max_per_user
+		`SELECT package_id, title ,price
 		FROM coupon_packages
-			WHERE package_id =$1`, id)
+        WHERE lower(title) LIKE '%' || lower($1) || '%'
+		OR lower(game_name) LIKE '%' || lower($1) || '%'
+        ORDER BY package_id`, q)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	out := []CouponPackage{}
 
+	defer rows.Close()
+	out := []CouponTitle{}
 	for rows.Next() {
-		var c CouponPackage
-		if err := rows.Scan(&c.PackageID, &c.GameName, &c.Title, &c.Description, &c.Price, &c.MaxPerUser); err != nil {
+		var c CouponTitle
+		if err := rows.Scan(&c.PackageID, &c.Title, &c.Price); err != nil {
 			return nil, err
 		}
+
 		out = append(out, c)
+
 	}
 	return out, rows.Err()
+}
+
+// GetCouponDetail หาคูปองจากเลข ไม่พบตอบ ErrNotFound
+func (s *Store) GetCouponDetail(ctx context.Context, id int64) (CouponPackage, error) {
+	var c CouponPackage
+	err := s.Pool.QueryRow(ctx,
+		`SELECT package_id ,game_name, title, description ,price, max_per_user
+		FROM coupon_packages
+			WHERE package_id =$1`, id).
+		Scan(&c.PackageID, &c.GameName, &c.Title, &c.Description, &c.Price, &c.MaxPerUser)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return c, ErrNotFound
+	}
+	return c, err
 }
 
 func (s *Store) BuyCoupon(ctx context.Context, userID int64, packageID int64) (string, error) {
@@ -95,7 +115,7 @@ func (s *Store) BuyCoupon(ctx context.Context, userID int64, packageID int64) (s
 		return "", err
 	}
 	if currentBought >= maxPerUser {
-		return "", fmt.Errorf("คุณซื้อคูปองนี้ครบตามจำนวนที่จำกัดแล้ว (%d/%d)", currentBought, maxPerUser)
+		return "", ErrCouponLimitFull
 	}
 
 	// 2. ดึงรหัสคูปองที่ว่างอยู่ + ล็อกไม่ให้คนอื่นแย่ง + เปลี่ยนสถานะเป็น sold
@@ -131,19 +151,4 @@ func (s *Store) BuyCoupon(ctx context.Context, userID int64, packageID int64) (s
 	}
 
 	return couponCode, nil
-}
-
-// DeleteCoupon ลบได้เมื่อเป็นแอดมิน
-func (s *Store) DeleteCoupon(ctx context.Context, packageID int64) error {
-	tag, err := s.Pool.Exec(ctx,
-		`
-        DELETE FROM coupon_packages cp
-         WHERE cp.package_id = $1 `, packageID)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return ErrNotFound
-	}
-	return nil
 }

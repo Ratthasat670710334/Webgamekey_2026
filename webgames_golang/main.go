@@ -35,6 +35,7 @@ func main() {
 
 	// login = ต้องมีตั๋ว, admin = ต้องมีตั๋วและบทบาทเป็น admin (ตรวจตั๋วก่อนเสมอ ค่อยดูบทบาท)
 	login := func(next http.HandlerFunc) http.HandlerFunc { return mw.RequireLogin(tickets, next) }
+	admin := func(next http.HandlerFunc) http.HandlerFunc { return login(mw.RequireRole("admin", next)) }
 
 	mux := http.NewServeMux()
 
@@ -44,22 +45,22 @@ func main() {
 	mux.HandleFunc("GET /api/users/me", login(h.Me))
 
 	//Customers
-
 	mux.HandleFunc("GET /api/coupons", h.GetCoupon)
-	//mux.HandleFunc("GET /api/coupons", h.SearchCoupon)
+	mux.HandleFunc("GET /api/coupons/search", h.SearchCoupons)
 	mux.HandleFunc("GET /api/coupons/{id}", h.GetCouponDetail)
-
-	//ยังไม่เสร็จ
 	mux.HandleFunc("POST /api/coupons/{id}/buy", login(h.BuyCoupon))
-	mux.HandleFunc("GET /api/users/me/{id}/orders", login(h.Orders))
+	mux.HandleFunc("GET /api/users/me/orders", login(h.Orders))
 
 	//Admin
-	mux.HandleFunc("GET /api/admin/users", login(mw.RequireRole("admin", h.AdminUser)))
-	//mux.HandleFunc("POST /api/admin/coupons", login(mw.RequireRole("admin", h.AddCoupon)))
-	//mux.HandleFunc("PUT /api/admin/coupons/{packageId}", login(mw.RequireRole("admin", h.EditCoupon)))
-	mux.HandleFunc("DELETE /api/admin/coupons/{packageId}", login(mw.RequireRole("admin", h.DeleteCoupon)))
+	//mux.HandleFunc("GET /api/admin/stats", admin(h.AdminUser))
+	mux.HandleFunc("GET /api/admin/users", admin(h.AdminUser))
+	mux.HandleFunc("GET /api/admin/orders", admin(h.GetOrders))
+
+	//mux.HandleFunc("POST /api/admin/coupons", admin( h.AddCoupon))
+	//mux.HandleFunc("PUT /api/admin/coupons/{id}", admin(h.EditCoupon))
+	mux.HandleFunc("DELETE /api/admin/coupons/{id}", admin(h.DeleteCoupon))
 
 	origins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
-	log.Println("MovieHub API ฟังอยู่ที่ :8080 ต้อนรับ", origins)
+	log.Println("เว็บขายคูปอง คีย์เกม API ฟังอยู่ที่ :8080 ต้อนรับ", origins)
 	log.Fatal(http.ListenAndServe(":8080", mw.Logging(mw.CORS(origins, mux))))
 }

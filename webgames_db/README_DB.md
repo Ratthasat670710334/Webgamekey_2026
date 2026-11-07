@@ -61,3 +61,22 @@ WHERE is_active = TRUE;"
 
 
 psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "SELECT * FROM users;"
+
+
+
+//-- คำสั่ง
+psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "
+        
+        WITH orders_price AS (
+		SELECT cp.package_id, cp.title ,cp.price FROM orders o
+        JOIN coupon_codes cc ON cc.code_id = o.code_id
+		JOIN coupon_packages cp ON cc.package_id = cp.package_id
+		)
+				
+		
+        SELECT package_id ,title ,SUM(price),AVG(price) FROM orders_price 
+        GROUP BY package_id ,title ,price
+        ORDER BY price DESC
+        LIMIT 5
+
+        ;"

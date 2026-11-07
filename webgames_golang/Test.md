@@ -39,7 +39,7 @@ psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "CREATE TA
 
 
 
-export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJzdWIiOiI2IiwiZXhwIjoxNzk0MDcxMzk1LCJpYXQiOjE3OTQwNjc3OTV9.D6hw47aC0aiK8U8NqKfQ6AA9Ogomf_plqfflpysMDy0
+export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJzdWIiOiI2IiwiZXhwIjoxNzk0MDc2OTI4LCJpYXQiOjE3OTQwNzMzMjh9.U_VwU4LsDAQd0g-oQnnNYa9HqUfoGsRRsjJEdDFCJ5o
 
 cd webgames_db
 docker compose up -d
@@ -118,6 +118,24 @@ curl -i -X GET 'http://localhost:8080/api/admin/users' \
 
 curl -i -X GET 'http://localhost:8080/api/admin/orders' \
 -H "Authorization: Bearer $TOKEN"
+
+
+--เปลี่ยน Role
+
+curl -i -X PUT 'http://localhost:8080/api/admin/users/4/role' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"role":"admin"}'
+
+curl -i -X PUT 'http://localhost:8080/api/admin/users/4/role' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"role":"customer"}'
+
+curl -i -X PUT 'http://localhost:8080/api/admin/users/4/role' \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"role":"jew"}'
 
 
 

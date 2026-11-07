@@ -79,9 +79,9 @@ func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
 func (s *Store) UpdateUserRole(ctx context.Context, id int64, role string) (User, error) {
 	var u User
 	err := s.Pool.QueryRow(ctx,
-		`UPDATE users SET role = $2, updated_at = now()
+		`UPDATE users SET role = $2
          WHERE user_id = $1
-         RETURNING id, email, display_name, role, created_at`, id, role).
+         RETURNING user_id, email, username, role, created_at`, id, role).
 		Scan(&u.ID, &u.Email, &u.Username, &u.Role, &u.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, ErrNotFound

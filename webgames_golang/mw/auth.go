@@ -14,10 +14,34 @@ type Who struct {
 	Role string
 }
 
-type ctxKey struct{}
+type ctxKey int
+
+const (
+	userIDKey ctxKey = iota
+	roleKey
+)
+
+func UserID(ctx context.Context) (int64, bool) {
+	id, ok := ctx.Value(userIDKey).(int64)
+	return id, ok
+}
+
+// Role คืนบทบาทจากตั๋ว ("member" หรือ "admin") ว่างถ้ายังไม่ได้ login
+func Role(ctx context.Context) string {
+	role, _ := ctx.Value(roleKey).(string)
+	return role
+}
+
+func fail(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]any{
+		"error": map[string]string{"code": code, "message": message},
+	})
+}
 
 func WhoFrom(ctx context.Context) Who {
-	w, _ := ctx.Value(ctxKey{}).(Who)
+	w, _ := ctx.Value(userIDKey).(Who)
 	return w
 }
 
@@ -43,7 +67,7 @@ func RequireLogin(iss *auth.Issuer, next http.HandlerFunc) http.HandlerFunc {
 			deny(w, http.StatusUnauthorized, "TOKEN_INVALID", "ตั๋วใช้ไม่ได้หรือหมดอายุ กรุณาเข้าสู่ระบบใหม่")
 			return
 		}
-		ctx := context.WithValue(r.Context(), ctxKey{}, Who{ID: id, Role: role})
+		ctx := context.WithValue(r.Context(), userIDKey, Who{ID: id, Role: role})
 		next(w, r.WithContext(ctx))
 	}
 }

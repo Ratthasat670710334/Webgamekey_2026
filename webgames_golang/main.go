@@ -52,13 +52,14 @@ func main() {
 	mux.HandleFunc("GET /api/users/me/orders", login(h.Orders))
 
 	//Admin
-	//mux.HandleFunc("GET /api/admin/stats", admin(h.AdminUser))
+	mux.HandleFunc("GET /api/admin/stats", admin(h.AdminStats))
 	mux.HandleFunc("GET /api/admin/users", admin(h.AdminUser))
+	mux.HandleFunc("PUT /api/admin/users/{id}/role", admin(h.AdminSetRole))
 	mux.HandleFunc("GET /api/admin/orders", admin(h.GetOrders))
-
-	//mux.HandleFunc("POST /api/admin/coupons", admin( h.AddCoupon))
-	//mux.HandleFunc("PUT /api/admin/coupons/{id}", admin(h.EditCoupon))
-	mux.HandleFunc("DELETE /api/admin/coupons/{id}", admin(h.DeleteCoupon))
+	mux.HandleFunc("GET /api/admin/coupons/{id}", admin(h.AdminGetCoupon))
+	mux.HandleFunc("POST /api/admin/coupons", admin(h.AdminCreateCoupon))
+	mux.HandleFunc("PUT /api/admin/coupons/{id}", admin(h.AdminUpdateCoupon))
+	mux.HandleFunc("DELETE /api/admin/coupons/{id}", admin(h.AdminDeleteCoupon))
 
 	origins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
 	log.Println("เว็บขายคูปอง คีย์เกม API ฟังอยู่ที่ :8080 ต้อนรับ", origins)

@@ -19,9 +19,9 @@ type CouponTitle struct {
 
 type CouponPackage struct {
 	PackageID   int     `json:"package_id"`
-	GameName    string  `json:"game_name"`
-	Title       string  `json:"title"`
-	Description string  `json:"description"`
+	GameName    *string `json:"game_name"`
+	Title       *string `json:"title"`
+	Description *string `json:"description"`
 	Price       float64 `json:"price"`
 	MaxPerUser  int     `json:"max_per_user"`
 	IsActive    bool    `json:"is_active"`

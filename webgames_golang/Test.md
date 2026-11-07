@@ -37,7 +37,7 @@ psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "CREATE TA
 
 
 
-export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiY3VzdG9tZXIiLCJzdWIiOiI2IiwiZXhwIjoxNzk0MDUxMTM5LCJpYXQiOjE3OTQwNDc1Mzl9.fvOdUF2H-Cs3Y9mPjikkOVVNPDIShQy1nn99PQvBEhY
+export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJzdWIiOiI2IiwiZXhwIjoxNzk0MDY3NzAxLCJpYXQiOjE3OTQwNjQxMDF9.ek5iyw-d-nl_sO4OxmiUIXgBqwEQdAiRwOXb1-HL-Mk
 
 cd webgames_db
 docker compose up -d
@@ -106,8 +106,59 @@ curl -i -X GET 'http://localhost:8080/api/users/me/orders' \
 
 
 
-  curl -i -X GET 'http://localhost:8080/api/admin/users' \
+--แอดมินดูรวมทั้งหมด
+
+curl -i -X GET 'http://localhost:8080/api/admin/stats' \
+-H "Authorization: Bearer $TOKEN"
+
+curl -i -X GET 'http://localhost:8080/api/admin/users' \
 -H "Authorization: Bearer $TOKEN"
 
 curl -i -X GET 'http://localhost:8080/api/admin/orders' \
 -H "Authorization: Bearer $TOKEN"
+
+
+
+
+--แอดมินดูคูปอง
+curl -i -X GET 'http://localhost:8080/api/admin/coupons/1' \
+-H "Authorization: Bearer $TOKEN"
+curl -i -X GET 'http://localhost:8080/api/admin/coupons/AAA' \
+-H "Authorization: Bearer $TOKEN"
+curl -i -X GET 'http://localhost:8080/api/admin/coupons/3' \
+-H "Authorization: Bearer $TOKEN"
+
+
+
+
+
+
+
+
+--แอดมินลบ
+
+curl -i -X DELETE 'http://localhost:8080/api/admin/coupons/3' \
+-H "Authorization: Bearer $TOKEN"
+curl -i -X DELETE 'http://localhost:8080/api/admin/coupons/AAA' \
+-H "Authorization: Bearer $TOKEN"
+curl -i -X DELETE 'http://localhost:8080/api/admin/coupons/9999' \
+-H "Authorization: Bearer $TOKEN"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+API_BASE_URL=http://localhost:8080 API_ADMIN_TOKEN='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJzdWIiOiI2IiwiZXhwIjoxNzk0MDY5MDE2LCJpYXQiOjE3OTQwNjU0MTZ9.8TFRr3I8cp4HARwccRPx2LrvNOkyE-sjz3O0s0_kbjE' go test -run TestAPIAllRoutes

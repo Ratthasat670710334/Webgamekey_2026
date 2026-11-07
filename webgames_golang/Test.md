@@ -84,12 +84,13 @@ curl -i -X POST 'http://localhost:8080/api/coupons/1/buy' \
 
 
 
-
+--ดูดูปอง
 curl -i -X GET 'http://localhost:8080/api/coupons' 
 curl -i -X GET 'http://localhost:8080/api/coupons/search?q=100' 
 
 
 
+--ดูรายละเอียดูปองด้วย ID
 curl -i -X GET 'http://localhost:8080/api/coupons/1' 
 curl -i -X GET 'http://localhost:8080/api/coupons/aaa' 
 curl -i -X GET 'http://localhost:8080/api/coupons/3' 
@@ -109,7 +110,6 @@ curl -i -X GET 'http://localhost:8080/api/users/me/orders' \
 
 
 --แอดมินดูรวมทั้งหมด
-
 curl -i -X GET 'http://localhost:8080/api/admin/stats' \
 -H "Authorization: Bearer $TOKEN"
 
@@ -121,7 +121,6 @@ curl -i -X GET 'http://localhost:8080/api/admin/orders' \
 
 
 --เปลี่ยน Role
-
 curl -i -X PUT 'http://localhost:8080/api/admin/users/4/role' \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
@@ -162,7 +161,6 @@ curl -s -w '%{http_code}\n' -X PUT localhost:8080/api/admin/coupons/3 -H "Author
 
 
 --แอดมินลบ
-
 curl -i -X DELETE 'http://localhost:8080/api/admin/coupons/3' \
 -H "Authorization: Bearer $TOKEN"
 curl -i -X DELETE 'http://localhost:8080/api/admin/coupons/AAA' \

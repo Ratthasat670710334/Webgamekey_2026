@@ -27,8 +27,8 @@ type TopCoupon struct {
 }
 
 type Stats struct {
-	Coupons       int64       `json:"movies"`
-	Users         int64       `json:"members"`
+	Coupons       int64       `json:"coupons"`
+	Users         int64       `json:"users"`
 	Admins        int64       `json:"admins"`
 	Orders        int64       `json:"Orders"`
 	Totals        int64       `json:"Totals"`
@@ -126,7 +126,7 @@ type Impact struct {
 type AdminCoupon struct {
 	ID int64 `json:"id"`
 	CouponInput
-	TotalAverage float64   `json:"voteAverage"`
+	TotalAverage float64   `json:"TotalAverage"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 	Impact       Impact    `json:"impact"`
 }

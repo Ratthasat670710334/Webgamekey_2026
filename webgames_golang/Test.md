@@ -18,6 +18,8 @@ psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "SELECT * 
 
 psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "DELETE FROM users WHERE user_id =9;"
 
+psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "DELETE FROM coupon_packages WHERE package_id =0;"
+
 
 psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "SELECT * FROM users;"
 psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "SELECT * FROM coupon_packages;"
@@ -37,7 +39,7 @@ psql "postgres://postgres:pg_670710334@127.0.0.1:5432/webgames_db" -c "CREATE TA
 
 
 
-export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJzdWIiOiI2IiwiZXhwIjoxNzk0MDY3NzAxLCJpYXQiOjE3OTQwNjQxMDF9.ek5iyw-d-nl_sO4OxmiUIXgBqwEQdAiRwOXb1-HL-Mk
+export TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4iLCJzdWIiOiI2IiwiZXhwIjoxNzk0MDcxMzk1LCJpYXQiOjE3OTQwNjc3OTV9.D6hw47aC0aiK8U8NqKfQ6AA9Ogomf_plqfflpysMDy0
 
 cd webgames_db
 docker compose up -d
@@ -132,6 +134,12 @@ curl -i -X GET 'http://localhost:8080/api/admin/coupons/3' \
 
 
 
+
+เพิ่มคูปอง
+curl -s -w '%{http_code}\n' -X POST localhost:8080/api/admin/coupons -H "Authorization: Bearer $TOKEN"  -H 'Content-Type: application/json' -d '{"package_id":3,"game_name":"GameTest1","title":"ทดสอบ1","description":"ทดสอบคูปอง","price":500,"max_per_user":3,"is_active":true}' 
+
+แก้คูปอง
+curl -s -w '%{http_code}\n' -X PUT localhost:8080/api/admin/coupons/3 -H "Authorization: Bearer $TOKEN"  -H 'Content-Type: application/json' -d '{"game_name":"GameTest1111","title":"ทดสอบ111","description":"ทดสอบคูปอง","price":500,"max_per_user":3,"is_active":true}'
 
 
 

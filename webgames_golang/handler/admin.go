@@ -131,7 +131,7 @@ func (h *Handler) AdminCreateCoupon(w http.ResponseWriter, r *http.Request) {
 	m, err := h.Store.CreateCoupon(r.Context(), req.ID, req.CouponInput)
 	switch {
 	case errors.Is(err, store.ErrDuplicateID):
-		writeError(w, http.StatusConflict, "MOVIE_EXISTS", "มีคูปองเลขนี้อยู่แล้ว")
+		writeError(w, http.StatusConflict, "COUPON_EXISTS", "มีคูปองเลขนี้อยู่แล้ว")
 		return
 	case err != nil:
 		internal(w, err)

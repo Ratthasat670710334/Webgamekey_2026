@@ -1,11 +1,10 @@
 package handler
 
+/*
 import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"strings"
-	"unicode/utf8"
 
 	"webgames_golang/mw"
 	"webgames_golang/store"
@@ -38,6 +37,7 @@ func (h *Handler) AdminStats(w http.ResponseWriter, r *http.Request) {
 type roleReq struct {
 	Role string `json:"role"`
 }
+
 
 // AdminSetRole เลื่อนหรือลดบทบาท ห้ามแก้ของตัวเอง (กัน admin คนสุดท้ายลดตัวเองจนไม่มีใครเข้าหลังบ้านได้)
 func (h *Handler) AdminSetRole(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +77,7 @@ func (h *Handler) AdminSetRole(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, item)
 }
 
-/*
+
 type CouponReq struct {
 	ID int64 `json:"id"` // ใช้เฉพาะตอนสร้าง: ใส่เลข TMDB เองก็ได้ หรือ 0 ให้ระบบออกเลข
 	store.CouponInput
@@ -197,4 +197,5 @@ func (h *Handler) AdminDeleteCoupon(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent) // ลบแล้ว ไม่มีอะไรให้ส่งกลับ
 }
+
 */

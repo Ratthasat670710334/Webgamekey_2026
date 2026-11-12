@@ -1,5 +1,6 @@
 package handler
 
+/*
 import (
 	"errors"
 	"net/http"
@@ -29,3 +30,4 @@ func (h *Handler) Orders(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, m)
 }
+*/

@@ -1,5 +1,5 @@
 package store
-
+/*
 import (
 	"context"
 	"errors"
@@ -226,4 +226,4 @@ func (s *Store) DeleteCoupon(ctx context.Context, packageID int64) error {
 		return ErrNotFound
 	}
 	return nil
-}
+}*/

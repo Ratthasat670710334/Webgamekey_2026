@@ -77,6 +77,7 @@ func (h *Handler) AdminSetRole(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, item)
 }
 
+/*
 type CouponReq struct {
 	ID int64 `json:"id"` // ใช้เฉพาะตอนสร้าง: ใส่เลข TMDB เองก็ได้ หรือ 0 ให้ระบบออกเลข
 	store.CouponInput
@@ -196,3 +197,4 @@ func (h *Handler) AdminDeleteCoupon(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent) // ลบแล้ว ไม่มีอะไรให้ส่งกลับ
 }
+*/

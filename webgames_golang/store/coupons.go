@@ -1,5 +1,5 @@
 package store
-
+/*
 import (
 	"context"
 	"errors"
@@ -152,3 +152,4 @@ func (s *Store) BuyCoupon(ctx context.Context, userID int64, packageID int64) (s
 
 	return couponCode, nil
 }
+*/

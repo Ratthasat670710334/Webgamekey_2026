@@ -1,5 +1,5 @@
 package store
-
+/*
 import (
 	"context"
 	"errors"
@@ -94,3 +94,4 @@ func (s *Store) GetOrders(ctx context.Context) ([]Orders, error) {
 	}
 	return out, rows.Err()
 }
+*/

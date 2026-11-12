@@ -1,5 +1,6 @@
-package handler
 
+package handler
+/*
 import (
 	"errors"
 	"net/http"
@@ -92,3 +93,4 @@ func (h *Handler) DeleteCoupon(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+*/

@@ -1,4 +1,4 @@
-import { apiFetch, login, postReview } from './backend';
+import { apiFetch, login, postReview, register } from './backend';
 
 // ตัวช่วยสร้าง "คำตอบปลอม" ของ fetch: ใส่แค่ status กับ body ที่อยากให้ server ตอบ
 function fakeResponse(status, body) {
@@ -25,6 +25,21 @@ test('GET ธรรมดา: ไม่มี body ไม่มี Authorization
   expect(options.method).toBe('GET');
   expect(options.body).toBeUndefined();
   expect(options.headers.Authorization).toBeUndefined();
+});
+
+test('register ส่งชื่อในฟิลด์ username ที่ API Go ต้องการ', async () => {
+  fetch.mockResolvedValue(fakeResponse(201, { id: 7 }));
+
+  await register('member@example.com', 'Password-123!', 'Member');
+
+  const [url, options] = fetch.mock.calls[0];
+  expect(url).toBe('/api/auth/register');
+  expect(options.method).toBe('POST');
+  expect(JSON.parse(options.body)).toEqual({
+    email: 'member@example.com',
+    password: 'Password-123!',
+    username: 'Member'
+  });
 });
 
 test('มี token ต้องแนบ Authorization แบบ Bearer และ body ต้องเป็นข้อความ JSON', async () => {

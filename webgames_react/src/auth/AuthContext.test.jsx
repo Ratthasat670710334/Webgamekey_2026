@@ -38,8 +38,14 @@ test('login uses API response and saves its token and member', async () => {
 });
 
 test('register creates the account then logs in through the API', async () => {
+  const apiMember = {
+    id: member.id,
+    email: member.email,
+    username: member.displayName,
+    role: member.role
+  };
   registerRequest.mockResolvedValue(member);
-  loginRequest.mockResolvedValue({ token: 'api-token', member });
+  loginRequest.mockResolvedValue({ token: 'api-token', member: apiMember });
   const { result } = renderHook(() => useAuth(), { wrapper });
 
   await act(async () => {
@@ -53,6 +59,7 @@ test('register creates the account then logs in through the API', async () => {
   );
   expect(loginRequest).toHaveBeenCalledWith(member.email, 'password');
   expect(result.current.token).toBe('api-token');
+  expect(result.current.member).toEqual({ ...apiMember, displayName: member.displayName });
 });
 
 test('discards the previous local mock session', () => {

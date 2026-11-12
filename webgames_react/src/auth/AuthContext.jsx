@@ -44,19 +44,20 @@ function getStoredSession() {
 
 function getSessionFromResponse(response) {
   const { token, member } = response || {};
+  const displayName = member?.displayName ?? member?.username;
   if (
     typeof token !== 'string' ||
     token.length === 0 ||
     !member ||
     member.id == null ||
     typeof member.email !== 'string' ||
-    typeof member.displayName !== 'string' ||
+    typeof displayName !== 'string' ||
     typeof member.role !== 'string'
   ) {
     throw new Error('เซิร์ฟเวอร์ส่งข้อมูลเข้าสู่ระบบไม่ครบ');
   }
 
-  return { token, member };
+  return { token, member: { ...member, displayName } };
 }
 
 export function AuthProvider({ children }) {

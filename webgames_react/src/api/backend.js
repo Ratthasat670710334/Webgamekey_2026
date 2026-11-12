@@ -38,7 +38,7 @@ export async function apiFetch(path, { method = 'GET', body, token } = {}) {
 
 // ---------- สมาชิก ----------
 export function register(email, password, displayName) {
-  return apiFetch('/api/auth/register', { method: 'POST', body: { email, password, displayName } });
+  return apiFetch('/api/auth/register', { method: 'POST', body: { email, password, username: displayName } });
 }
 export function login(email, password) {
   return apiFetch('/api/auth/login', { method: 'POST', body: { email, password } });   // ได้ { token, member }

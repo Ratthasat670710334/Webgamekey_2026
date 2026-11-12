@@ -70,7 +70,7 @@ func main() {
 	}
 
 	//log.Println("MovieHub API ฟังอยู่ที่ :8080 ต้อนรับ", origins)
-	log.Println("MovieHub API ฟังอยู่ที่ :"+port, "ต้อนรับ", origins)
+	log.Println("GamekeyCD API ฟังอยู่ที่ :"+port, "ต้อนรับ", origins)
 	//log.Fatal(http.ListenAndServe(":8080", mw.Logging(mw.CORS(origins, mux))))
 	log.Fatal(http.ListenAndServe(":"+port, mw.Logging(mw.CORS(origins, mux))))
 }

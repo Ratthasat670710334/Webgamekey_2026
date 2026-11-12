@@ -1,6 +1,5 @@
 package handler
 
-/*
 import (
 	"encoding/json"
 	"errors"
@@ -25,19 +24,9 @@ func (h *Handler) AdminUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
-func (h *Handler) AdminStats(w http.ResponseWriter, r *http.Request) {
-	ms, err := h.Store.Stats(r.Context())
-	if err != nil {
-		internal(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": ms})
-}
-
 type roleReq struct {
 	Role string `json:"role"`
 }
-
 
 // AdminSetRole เลื่อนหรือลดบทบาท ห้ามแก้ของตัวเอง (กัน admin คนสุดท้ายลดตัวเองจนไม่มีใครเข้าหลังบ้านได้)
 func (h *Handler) AdminSetRole(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +66,7 @@ func (h *Handler) AdminSetRole(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, item)
 }
 
-
+/*
 type CouponReq struct {
 	ID int64 `json:"id"` // ใช้เฉพาะตอนสร้าง: ใส่เลข TMDB เองก็ได้ หรือ 0 ให้ระบบออกเลข
 	store.CouponInput

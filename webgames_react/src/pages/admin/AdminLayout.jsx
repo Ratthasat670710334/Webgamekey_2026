@@ -10,8 +10,6 @@ function AdminLayout() {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const menuItems = [
-    { name: 'ภาพรวม', path: '/admin', icon: '📊' },
-    { name: 'สมาชิก', path: '/admin/members', icon: '👥' },
     { name: 'จัดการเกม', path: '/admin/games', icon: '🎮' },
     { name: 'จัดการ CD-Key', path: '/admin/keys', icon: '🔑' }
   ];

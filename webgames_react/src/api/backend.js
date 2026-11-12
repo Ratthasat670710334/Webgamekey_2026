@@ -1,4 +1,8 @@
-// ชั้นกลางสำหรับคุยกับ Go API
+// ชั้นกลางสำหรับคุยกับ Backend ของทีมเรา (วันนี้คือ mock ที่พอร์ต 4000 สัปดาห์หน้าคือ Go)
+// ต่างจาก tmdb.js ตรงที่มี POST / PUT / DELETE และต้องแนบ token สำหรับ endpoint ที่ต้อง login
+
+// '' = origin เดียวกับหน้าเว็บ CRA จะ proxy /api ไปที่ http://localhost:4000 ให้ (ตั้งใน package.json)
+// ตอนต่อ Go จริง ตั้ง REACT_APP_API_URL=https://api.ทีมเรา.xyz ใน .env และบน Vercel
 const BASE = process.env.REACT_APP_API_URL || '';
 
 
@@ -18,6 +22,13 @@ export async function apiFetch(path, { method = 'GET', body, token } = {}) {
   const data = await res.json()                              //    อ่านคำตอบเป็น JSON
     .catch(() => ({ error: 'server ไม่ได้ตอบเป็น JSON' }));
   if (!res.ok) {                                             // 4) 400 / 401 / 404 / 409 มาลงตรงนี้
+    /*const err = new Error(
+      data.error?.message ??
+      data.error ??
+      `server ตอบกลับ ${res.status}`
+    );*/
+
+
     const err = new Error(data.error?.message ?? data.error ?? `server ตอบกลับ ${res.status}`);
     err.status = res.status;                                 //    แนบเลขไว้ให้หน้าเว็บใช้ต่อ
     throw err;
@@ -27,13 +38,13 @@ export async function apiFetch(path, { method = 'GET', body, token } = {}) {
 
 // ---------- สมาชิก ----------
 export function register(email, password, displayName) {
-  return apiFetch('/api/auth/register', { method: 'POST', body: { email, password, username: displayName } });
+  return apiFetch('/api/auth/register', { method: 'POST', body: { email, password, displayName } });
 }
 export function login(email, password) {
   return apiFetch('/api/auth/login', { method: 'POST', body: { email, password } });   // ได้ { token, member }
 }
 export function getMe(token) {
-  return apiFetch('/api/users/me', { token });
+  return apiFetch('/api/me', { token });
 }
 
 // ---------- รีวิว ----------
@@ -60,127 +71,42 @@ export function removeFromWishlist(movieId, token) {
   return apiFetch(`/api/me/wishlist/${movieId}`, { method: 'DELETE', token });
 }
 
-function toGame(coupon) {
-  const price = Number(coupon.price ?? 0);
-  return {
-    id: coupon.package_id ?? coupon.id,
-    title: coupon.title ?? '',
-    titleTh: '',
-    detail: coupon.description ?? '',
-    genre: coupon.game_name ?? 'Digital Key',
-    platform: 'Digital Key',
-    region: 'Global',
-    poster: '',
-    price,
-    discountPrice: price,
-    discount: 0,
-    rating: 0,
-    maxPerUser: Number(coupon.max_per_user ?? 1),
-    availableCount: coupon.available_count == null ? null : Number(coupon.available_count),
-    isActive: coupon.is_active ?? true
-  };
+// ---------- หนัง (สัปดาห์หน้า: เปลี่ยนหน้า Movies จาก tmdb.js มาใช้ตัวนี้) ----------
+export async function getMovies() {
+  const data = await apiFetch('/api/movies');
+  return data.items;
 }
 
-export async function getCoupons() {
-  const data = await apiFetch('/api/coupons');
-  return (data.items ?? []).map(toGame);
+export async function getMovie(movieId) {
+  return apiFetch(`/api/movies/${movieId}`);
+}
+// ---------- แนวหนัง (สาธารณะ ใช้ทำ dropdown ในฟอร์มหลังบ้าน) ----------
+export async function getGenres() {
+  const data = await apiFetch('/api/genres');
+  return data.items;                                      // [{ id, nameEn, nameTh }]
 }
 
-export async function searchCoupons(query) {
-  const data = await apiFetch(`/api/coupons/search?q=${encodeURIComponent(query)}`);
-  return (data.items ?? []).map(toGame);
+// ---------- หลังบ้าน (ทุกตัวต้องแนบ token ของ admin ถ้าเป็น member Go ตอบ 403) ----------
+export function getAdminStats(token) {
+  return apiFetch('/api/admin/stats', { token });
 }
-
-export async function getCoupon(packageId) {
-  return toGame(await apiFetch(`/api/coupons/${packageId}`));
-}
-
-export function buyCoupon(packageId, token) {
-  return apiFetch(`/api/coupons/${packageId}/buy`, { method: 'POST', token });
-}
-
-export async function getMyOrders(token) {
-  const orders = await apiFetch('/api/users/me/orders', { token });
-  return orders.map((order) => ({
-    orderId: order.order_id,
-    gameName: order.game_name,
-    title: order.title,
-    couponCode: order.coupon_code,
-    totalPrice: Number(order.purchase_price),
-    date: order.purchased_at
-  }));
-}
-
-export async function getAdminOrders(token) {
-  const data = await apiFetch('/api/admin/orders', { token });
-  return (data.items ?? []).map((order) => ({
-    orderId: order.order_id,
-    userId: order.user_id,
-    username: order.user?.username ?? order.user?.Username ?? '',
-    gameName: order.game_name,
-    title: order.title,
-    couponCode: order.coupon_code,
-    totalPrice: Number(order.purchase_price),
-    date: order.purchased_at
-  }));
-}
-
-// Keep older page imports working while returning the current game-key products.
-export const getMovies = getCoupons;
-export const getMovie = getCoupon;
-
-export async function getAdminStats(token) {
-  const data = await apiFetch('/api/admin/stats', { token });
-  const stats = data.items ?? data;
-  return {
-    coupons: Number(stats.coupons ?? 0),
-    users: Number(stats.users ?? 0),
-    admins: Number(stats.admins ?? 0),
-    orders: Number(stats.orders ?? stats.Orders ?? 0),
-    totals: Number(stats.totals ?? stats.Totals ?? 0),
-    newestUsers: stats.newestUsers ?? [],
-    topCoupons: stats.topCoupon ?? []
-  };
-}
-
-function toMember(user) {
-  return {
-    ...user,
-    displayName: user.displayName ?? user.username ?? '',
-    role: user.role === 'customer' ? 'member' : user.role
-  };
-}
-
 export async function getAdminMembers(token) {
-  const data = await apiFetch('/api/admin/users', { token });
-  return (data.items ?? []).map(toMember);
+  const data = await apiFetch('/api/admin/members', { token });
+  return data.items;
 }
 export function setMemberRole(memberId, role, token) {
-  return apiFetch(`/api/admin/users/${memberId}/role`, {
-    method: 'PUT',
-    body: { role: role === 'member' ? 'customer' : role },
-    token
-  }).then(toMember);
+  return apiFetch(`/api/admin/members/${memberId}/role`, { method: 'PUT', body: { role }, token });
 }
-
-export async function getAdminCoupons(token) {
-  const data = await apiFetch('/api/admin/coupons', { token });
-  return (data.items ?? []).map(toGame);
+export function getAdminMovie(movieId, token) {
+  return apiFetch(`/api/admin/movies/${movieId}`, { token });
 }
-
-export async function getAdminCoupon(packageId, token) {
-  return toGame(await apiFetch(`/api/admin/coupons/${packageId}`, { token }));
+export function createMovie(fields, token) {
+  return apiFetch('/api/admin/movies', { method: 'POST', body: fields, token });
 }
-
-export function createCoupon(fields, token) {
-  return apiFetch('/api/admin/coupons', { method: 'POST', body: fields, token });
+export function updateMovie(movieId, fields, token) {
+  return apiFetch(`/api/admin/movies/${movieId}`, { method: 'PUT', body: fields, token });
 }
-
-export function updateCoupon(packageId, fields, token) {
-  return apiFetch(`/api/admin/coupons/${packageId}`, { method: 'PUT', body: fields, token });
-}
-
-export function deleteCoupon(packageId, token) {
-  return apiFetch(`/api/admin/coupons/${packageId}`, { method: 'DELETE', token });
+export function deleteMovie(movieId, token) {
+  return apiFetch(`/api/admin/movies/${movieId}`, { method: 'DELETE', token });       // 204 ได้ null
 }
 

@@ -60,7 +60,7 @@ function Navbar() {
                 className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-gray-300 transition hover:border-purple-500 hover:text-white"
               >
                 <span>👤</span>
-                <span>{member?.displayName || 'บัญชีของฉัน'}</span>
+                <span>Profile (Demo)</span>
 
                 {isAdmin && (
                   <span className="rounded-md bg-purple-500/20 px-2 py-1 text-xs text-purple-400">

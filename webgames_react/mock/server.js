@@ -62,7 +62,7 @@ app.get('/api/movies/:id', (req, res) => {
 
 // ---------- สมาชิก ----------
 app.post('/api/auth/register', (req, res) => {
-  const { email = '', password = '', username = '', displayName = username } = req.body || {};
+  const { email = '', password = '', displayName = '' } = req.body || {};
   if (!email.includes('@') || password.length < 4 || !displayName.trim()) {
     return res.status(400).json({ error: 'กรอกอีเมล รหัสผ่าน (4 ตัวขึ้นไป) และชื่อที่แสดงให้ครบ' });
   }

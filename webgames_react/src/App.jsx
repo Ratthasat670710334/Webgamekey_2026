@@ -1,14 +1,12 @@
 
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import AdminLayout from './pages/admin/AdminLayout';
-import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminGames from './pages/admin/AdminGames';
 import AdminKeys from './pages/admin/AdminKeys';
-import AdminMembers from './pages/admin/AdminMembers';
 
 import Home from './pages/Home';
 import MovieDetail from './pages/MovieDetail';
@@ -62,8 +60,7 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<AdminDashboard />} />
-            <Route path="members" element={<AdminMembers />} />
+            <Route index element={<Navigate to="games" replace />} />
             <Route path="games" element={<AdminGames />} />
             <Route path="keys" element={<AdminKeys />} />
           </Route>

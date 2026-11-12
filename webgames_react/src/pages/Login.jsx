@@ -4,8 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('demo@moviehub.test');
+  const [password, setPassword] = useState('1234');
   const [error, setError] = useState('');
   const [status, setStatus] = useState('typing');
 

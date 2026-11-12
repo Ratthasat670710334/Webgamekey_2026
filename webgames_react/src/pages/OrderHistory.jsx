@@ -1,106 +1,210 @@
+
 import { useEffect, useState } from 'react';
-import { useAuth } from '../auth/AuthContext';
-import { getMyOrders } from '../api/backend';
 
 function OrderHistory() {
-  const { token } = useAuth();
   const [orders, setOrders] = useState([]);
-  const [status, setStatus] = useState('loading');
-  const [error, setError] = useState('');
-  const [copiedOrder, setCopiedOrder] = useState(null);
-  const [reloadKey, setReloadKey] = useState(0);
+  const [copiedKey, setCopiedKey] = useState('');
 
   useEffect(() => {
-    let ignore = false;
-    setStatus('loading');
-    setError('');
-    getMyOrders(token)
-      .then((items) => {
-        if (!ignore) {
-          setOrders(items);
-          setStatus('success');
-        }
-      })
-      .catch((err) => {
-        if (!ignore) {
-          setError(err.message);
-          setStatus('error');
-        }
-      });
-    return () => {
-      ignore = true;
-    };
-  }, [token, reloadKey]);
+    const savedOrders = JSON.parse(
+      localStorage.getItem('gamekey_orders') || '[]'
+    );
 
-  async function copyCode(order) {
+    setOrders(savedOrders);
+  }, []);
+
+  async function copyKey(key) {
     try {
-      await navigator.clipboard.writeText(order.couponCode);
-      setCopiedOrder(order.orderId);
-      setTimeout(() => setCopiedOrder(null), 2000);
-    } catch {
-      setError('คัดลอกรหัสไม่ได้ กรุณาเลือกและคัดลอกรหัสด้วยตนเอง');
+      await navigator.clipboard.writeText(key);
+      setCopiedKey(key);
+
+      setTimeout(() => {
+        setCopiedKey('');
+      }, 2000);
+    } catch (error) {
+      alert('ไม่สามารถคัดลอกคีย์ได้ กรุณาคัดลอกด้วยตนเอง');
     }
   }
 
   return (
     <div className="min-h-screen bg-[#09090f] px-5 py-10 text-white">
-      <div className="mx-auto max-w-5xl">
-        <h1 className="text-3xl font-black">ประวัติการสั่งซื้อ</h1>
-        <p className="mt-2 text-gray-400">รายการซื้อและรหัสคูปองจากบัญชีของคุณ</p>
 
-        {status === 'loading' && <p className="mt-8 text-center text-gray-400">กำลังโหลดประวัติ...</p>}
-        {status === 'error' && (
-          <div className="mt-8 rounded-xl bg-red-500/10 p-5 text-red-300">
-            <p role="alert">{error}</p>
-            <button onClick={() => setReloadKey((key) => key + 1)} className="mt-3 underline">
-              ลองใหม่
-            </button>
-          </div>
-        )}
-        {status === 'success' && orders.length === 0 && (
+      <div className="mx-auto max-w-5xl">
+
+        <h1 className="text-3xl font-black">
+          ประวัติการสั่งซื้อ
+        </h1>
+
+        <p className="mt-2 text-gray-400">
+          รายการเกมที่คุณซื้อสำเร็จ พร้อม CD-Key ของคุณ
+        </p>
+
+        {orders.length === 0 ? (
+
           <div className="mt-10 rounded-2xl border border-white/10 bg-[#14141f] p-10 text-center">
+
             <p className="text-5xl">🛒</p>
-            <h2 className="mt-4 text-xl font-bold">ยังไม่มีประวัติการสั่งซื้อ</h2>
+
+            <h2 className="mt-4 text-xl font-bold">
+              ยังไม่มีประวัติการสั่งซื้อ
+            </h2>
+
+            <p className="mt-2 text-gray-400">
+              เลือกซื้อเกมที่คุณชื่นชอบได้เลย
+            </p>
+
           </div>
-        )}
-        {status === 'success' && orders.length > 0 && (
-          <div className="mt-8 space-y-5">
+
+        ) : (
+
+          <div className="mt-8 space-y-6">
+
             {orders.map((order) => (
-              <article key={order.orderId} className="rounded-2xl border border-white/10 bg-[#14141f] p-6">
+
+              <div
+                key={order.orderId}
+                className="rounded-2xl border border-white/10 bg-[#14141f] p-6"
+              >
+
                 <div className="flex flex-wrap justify-between gap-3 border-b border-white/10 pb-4">
+
                   <div>
-                    <p className="text-sm text-gray-400">คำสั่งซื้อ #{order.orderId}</p>
-                    <h2 className="mt-1 text-lg font-bold">{order.title}</h2>
-                    <p className="text-sm text-gray-400">{order.gameName}</p>
+                    <p className="text-sm text-gray-400">
+                      หมายเลขคำสั่งซื้อ
+                    </p>
+
+                    <p className="font-bold">
+                      {order.orderId}
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-400">
-                    {new Date(order.date).toLocaleString('th-TH')}
-                  </p>
-                </div>
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs text-gray-400">รหัสคูปอง</p>
-                    <p className="mt-1 break-all font-mono font-semibold">{order.couponCode}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyCode(order)}
-                    className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold hover:bg-purple-500"
-                  >
-                    {copiedOrder === order.orderId ? 'คัดลอกแล้ว' : 'คัดลอกรหัส'}
-                  </button>
-                </div>
-                <div className="mt-5 flex justify-between border-t border-white/10 pt-4">
-                  <span className="text-gray-400">ยอดชำระ</span>
-                  <span className="text-xl font-black text-purple-400">
-                    ฿{order.totalPrice.toLocaleString('th-TH')}
+
+                  <span className="h-fit rounded-lg bg-green-500/10 px-3 py-2 text-sm font-semibold text-green-400">
+                    {order.status}
                   </span>
+
                 </div>
-              </article>
+
+                <div className="mt-4 flex flex-wrap justify-between gap-4">
+
+                  <div>
+                    <p className="text-sm text-gray-400">
+                      วันที่สั่งซื้อ
+                    </p>
+
+                    <p>{order.date}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-400">
+                      จำนวนคีย์
+                    </p>
+
+                    <p>{order.quantity} คีย์</p>
+                  </div>
+
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center gap-4">
+
+                  <img
+                    src={order.poster}
+                    alt={order.title}
+                    className="h-24 w-36 rounded-lg object-cover"
+                  />
+
+                  <div>
+                    <h3 className="text-lg font-bold">
+                      {order.title}
+                    </h3>
+
+                    <p className="mt-2 text-sm text-gray-400">
+                      {order.platform} / {order.region}
+                    </p>
+                  </div>
+
+                </div>
+
+                <div className="mt-6 border-t border-white/10 pt-5">
+
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="font-bold text-purple-400">
+                      🔑 CD-Key ของคุณ
+                    </h3>
+
+                    <span className="text-xs text-gray-500">
+                      {order.keys?.length || 0} คีย์
+                    </span>
+                  </div>
+
+                  {order.keys && order.keys.length > 0 ? (
+
+                    <div className="mt-4 space-y-3">
+
+                      {order.keys.map((key, index) => (
+
+                        <div
+                          key={`${order.orderId}-${index}`}
+                          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#09090f] p-4"
+                        >
+
+                          <div>
+                            <p className="mb-2 text-xs text-gray-500">
+                              KEY #{index + 1}
+                            </p>
+
+                            <p className="break-all font-mono text-sm font-semibold tracking-wide text-white">
+                              {key}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => copyKey(key)}
+                            className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold transition hover:bg-purple-500"
+                          >
+                            {copiedKey === key ? '✓ คัดลอกแล้ว' : '📋 Copy'}
+                          </button>
+
+                        </div>
+
+                      ))}
+
+                    </div>
+
+                  ) : (
+
+                    <div className="mt-4 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-4">
+                      <p className="text-sm text-yellow-400">
+                        รายการสั่งซื้อนี้เกิดขึ้นก่อนเพิ่มระบบ CD-Key จึงไม่มีคีย์บันทึกไว้
+                      </p>
+                    </div>
+
+                  )}
+
+                </div>
+
+                <div className="mt-6 flex justify-between border-t border-white/10 pt-4">
+
+                  <span className="text-gray-400">
+                    ยอดชำระ
+                  </span>
+
+                  <span className="text-xl font-black text-purple-400">
+                    ฿{Number(order.totalPrice).toLocaleString('th-TH')}
+                  </span>
+
+                </div>
+
+              </div>
+
             ))}
+
           </div>
+
         )}
+
       </div>
+
     </div>
   );
 }

@@ -21,8 +21,8 @@ function renderAt(path) {
 
 // จำลองคนที่ login แล้ว: AuthProvider อ่าน token และ member จาก localStorage ตอนเริ่ม
 function loginAs(member) {
-  localStorage.setItem('moviehub.token', 'mock.1.abc');
-  localStorage.setItem('moviehub.member', JSON.stringify(member));
+  localStorage.setItem('gamekey_token', 'mock.1.abc');
+  localStorage.setItem('gamekey_member', JSON.stringify(member));
 }
 
 beforeEach(() => localStorage.clear());
@@ -35,7 +35,7 @@ test('ยังไม่ login ต้องถูกพาไปหน้า Log
 });
 
 test('login เป็น member ต้องเห็นหน้า 403 ไม่ใช่หลังบ้าน และไม่ถูกส่งไป Login', () => {
-  loginAs({ id: 1, displayName: 'Demo', role: 'member' });
+  loginAs({ id: 1, email: 'demo@example.com', displayName: 'Demo', role: 'member' });
   renderAt('/admin');
 
   expect(screen.getByText('403')).toBeInTheDocument();
@@ -44,7 +44,7 @@ test('login เป็น member ต้องเห็นหน้า 403 ไม�
 });
 
 test('login เป็น admin ต้องเห็นหลังบ้าน', () => {
-  loginAs({ id: 2, displayName: 'Admin', role: 'admin' });
+  loginAs({ id: 2, email: 'admin@example.com', displayName: 'Admin', role: 'admin' });
   renderAt('/admin');
 
   expect(screen.getByRole('heading', { name: 'หลังบ้าน' })).toBeInTheDocument();

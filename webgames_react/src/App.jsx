@@ -7,6 +7,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminGames from './pages/admin/AdminGames';
 import AdminKeys from './pages/admin/AdminKeys';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminMembers from './pages/admin/AdminMembers';
 
 import Home from './pages/Home';
 import MovieDetail from './pages/MovieDetail';
@@ -61,6 +63,8 @@ function App() {
             }
           >
             <Route index element={<Navigate to="games" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="members" element={<AdminMembers />} />
             <Route path="games" element={<AdminGames />} />
             <Route path="keys" element={<AdminKeys />} />
           </Route>

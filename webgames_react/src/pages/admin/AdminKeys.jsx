@@ -1,33 +1,61 @@
 
 import { useEffect, useState } from 'react';
-import { getGames } from '../../data/gameCatalog';
-import {
-  getGameKeys,
-  addGameKeys,
-  deleteGameKey
-} from '../../data/keyInventory';
+import { useAuth } from '../../auth/AuthContext';
+import { getGames, getGameKeys, addGameKeys, deleteGameKey } from '../../api/backend';
 
 function AdminKeys() {
-  const [games] = useState(getGames);
+  const { token } = useAuth();
+  const [games, setGames] = useState([]);
   const [selectedId, setSelectedId] = useState(
     games.length > 0 ? String(games[0].id) : ''
   );
   const [keys, setKeys] = useState([]);
   const [newKeys, setNewKeys] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const selectedGame = games.find(
     (game) => String(game.id) === selectedId
   );
 
   useEffect(() => {
-    if (selectedGame) {
-      setKeys(getGameKeys(selectedGame));
-    } else {
-      setKeys([]);
+    let ignore = false;
+    async function load() {
+      try {
+        const items = await getGames();
+        if (ignore) return;
+        setGames(items);
+        setSelectedId(items.length ? String(items[0].id) : '');
+      } catch (err) {
+        if (!ignore) setError(err.message);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
     }
-  }, [selectedGame]);
+    load();
+    return () => { ignore = true; };
+  }, []);
 
-  function handleAddKeys(e) {
+  useEffect(() => {
+    let ignore = false;
+    async function loadKeys() {
+      if (!selectedGame) {
+        setKeys([]);
+        return;
+      }
+      try {
+        setError('');
+        const items = await getGameKeys(selectedGame.id, token);
+        if (!ignore) setKeys(items);
+      } catch (err) {
+        if (!ignore) setError(err.message);
+      }
+    }
+    loadKeys();
+    return () => { ignore = true; };
+  }, [selectedGame, token]);
+
+  async function handleAddKeys(e) {
     e.preventDefault();
 
     if (!selectedGame) return;
@@ -42,21 +70,26 @@ function AdminKeys() {
       return;
     }
 
-    const updatedKeys = addGameKeys(selectedGame, keyList);
-
-    setKeys([...updatedKeys]);
-    setNewKeys('');
-
-    alert('เพิ่ม CD-Key เรียบร้อยแล้ว');
+    try {
+      setKeys(await addGameKeys(selectedGame.id, keyList, token));
+      setNewKeys('');
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
-  function handleDeleteKey(key) {
+  async function handleDeleteKey(key) {
     if (!window.confirm('ต้องการลบ CD-Key นี้ใช่หรือไม่?')) {
       return;
     }
 
-    const updatedKeys = deleteGameKey(selectedGame, key);
-    setKeys([...updatedKeys]);
+    try {
+      await deleteGameKey(selectedGame.id, key.id, token);
+      setKeys(keys.filter((item) => item.id !== key.id));
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   return (
@@ -68,7 +101,11 @@ function AdminKeys() {
         </p>
       </div>
 
-      {games.length === 0 ? (
+      {error && <p className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-400">{error}</p>}
+
+      {loading ? (
+        <p className="text-gray-400">กำลังโหลดเกม...</p>
+      ) : games.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-[#12121d] p-8 text-center text-gray-400">
           กรุณาเพิ่มเกมก่อนจัดการ CD-Key
         </div>
@@ -140,7 +177,7 @@ function AdminKeys() {
               <div className="divide-y divide-white/5">
                 {keys.map((key, index) => (
                   <div
-                    key={`${key}-${index}`}
+                    key={key.id}
                     className="flex flex-wrap items-center justify-between gap-3 p-4"
                   >
                     <div>
@@ -148,7 +185,7 @@ function AdminKeys() {
                         {index + 1}.
                       </span>
                       <span className="break-all font-mono text-sm text-gray-200">
-                        {key}
+                        {key.key}
                       </span>
                     </div>
 

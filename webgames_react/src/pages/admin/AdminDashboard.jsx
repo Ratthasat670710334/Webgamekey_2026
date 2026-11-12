@@ -1,14 +1,7 @@
 
 import { useEffect, useState } from 'react';
-import games from '../../data/games';
-
-function readStorage(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key) || '[]');
-  } catch {
-    return [];
-  }
-}
+import { useAuth } from '../../auth/AuthContext';
+import { getAdminStats } from '../../api/backend';
 
 function formatMoney(amount) {
   return Number(amount || 0).toLocaleString('th-TH', {
@@ -19,6 +12,7 @@ function formatMoney(amount) {
 }
 
 function AdminDashboard() {
+  const { token } = useAuth();
   const [stats, setStats] = useState({
     gameCount: 0,
     memberCount: 0,
@@ -29,56 +23,23 @@ function AdminDashboard() {
   });
 
   const [recentOrders, setRecentOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const users = readStorage('gamekey_users');
-    const orders = readStorage('gamekey_orders');
-
-    let inventory = {};
-
-    try {
-      inventory = JSON.parse(
-        localStorage.getItem('gamekey_inventory') || '{}'
-      );
-    } catch {
-      inventory = {};
-    }
-
-    const availableKeys = Object.values(inventory).reduce(
-      (total, keys) => total + (Array.isArray(keys) ? keys.length : 0),
-      0
-    );
-
-    const completedOrders = orders.filter(
-      (order) =>
-        order.status === 'ชำระเงินสำเร็จ' ||
-        order.status === 'ซื้อสำเร็จ'
-    );
-
-    const sales = completedOrders.reduce(
-      (total, order) => total + Number(order.totalPrice || 0),
-      0
-    );
-
-    const pendingOrders = orders.filter(
-      (order) =>
-        order.status !== 'ชำระเงินสำเร็จ' &&
-        order.status !== 'ซื้อสำเร็จ'
-    ).length;
-
-    setStats({
-      gameCount: Array.isArray(games) ? games.length : 0,
-      memberCount: users.length + 1,
-      orderCount: orders.length,
-      sales,
-      availableKeys,
-      pendingOrders
+    let ignore = false;
+    getAdminStats(token).then((data) => {
+      if (!ignore) {
+        setStats(data);
+        setRecentOrders(data.recentOrders || []);
+      }
+    }).catch((err) => {
+      if (!ignore) setError(err.message);
+    }).finally(() => {
+      if (!ignore) setLoading(false);
     });
-
-    setRecentOrders(
-      [...orders].reverse().slice(0, 5)
-    );
-  }, []);
+    return () => { ignore = true; };
+  }, [token]);
 
   const cards = [
     {
@@ -91,7 +52,7 @@ function AdminDashboard() {
       title: 'สมาชิกทั้งหมด',
       value: stats.memberCount.toLocaleString('th-TH'),
       icon: '👥',
-      detail: 'รวมบัญชี Demo Member'
+      detail: 'สมาชิกในฐานข้อมูล'
     },
     {
       title: 'คำสั่งซื้อทั้งหมด',
@@ -127,6 +88,9 @@ function AdminDashboard() {
           ภาพรวมข้อมูลร้านค้า GAMEKEY STORE
         </p>
       </div>
+
+      {loading && <p className="mb-4 text-sm text-gray-400">กำลังโหลดข้อมูล...</p>}
+      {error && <p className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-400">{error}</p>}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => (
@@ -188,7 +152,7 @@ function AdminDashboard() {
                       {order.orderId || '-'}
                     </td>
                     <td className="px-5 py-4 text-white">
-                      {order.game?.title || order.title || '-'}
+                      {order.title || '-'}
                     </td>
                     <td className="px-5 py-4 text-gray-300">
                       {order.quantity || 0}
@@ -215,11 +179,6 @@ function AdminDashboard() {
           </div>
         )}
       </section>
-
-      <p className="mt-5 text-xs text-gray-600">
-        หมายเหตุ: ข้อมูลในหน้านี้อ่านจาก localStorage ของเบราว์เซอร์เครื่องนี้
-        จึงเป็นข้อมูลสำหรับระบบจำลองเท่านั้น
-      </p>
     </div>
   );
 }

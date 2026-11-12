@@ -126,6 +126,7 @@ function Register() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="example@email.com"
               required
+              maxLength={100}
               className={input}
             />
 
@@ -147,6 +148,7 @@ function Register() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="ตั้งรหัสผ่าน"
               required
+              maxLength={72}
               className={input}
             />
 

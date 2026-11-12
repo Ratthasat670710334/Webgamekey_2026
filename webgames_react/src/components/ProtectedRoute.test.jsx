@@ -31,8 +31,13 @@ test('ยังไม่ login ต้องถูกพาไปหน้า Log
 });
 
 test('มี token ใน localStorage แล้ว ต้องเห็นหน้าลับ', () => {
-  localStorage.setItem('moviehub.token', 'mock.1.abc');
-  localStorage.setItem('moviehub.member', JSON.stringify({ id: 1, displayName: 'Demo' }));
+  localStorage.setItem('gamekey_token', 'mock.1.abc');
+  localStorage.setItem('gamekey_member', JSON.stringify({
+    id: 1,
+    email: 'demo@example.com',
+    displayName: 'Demo',
+    role: 'member'
+  }));
 
   renderAt('/me/wishlist');
 

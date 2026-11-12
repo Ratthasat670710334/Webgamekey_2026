@@ -1,17 +1,26 @@
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '../auth/AuthContext';
+import { getGameOrders } from '../api/backend';
 
 function OrderHistory() {
+  const { token } = useAuth();
   const [orders, setOrders] = useState([]);
   const [copiedKey, setCopiedKey] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedOrders = JSON.parse(
-      localStorage.getItem('gamekey_orders') || '[]'
-    );
-
-    setOrders(savedOrders);
-  }, []);
+    let ignore = false;
+    getGameOrders(token).then((items) => {
+      if (!ignore) setOrders(items);
+    }).catch((err) => {
+      if (!ignore) setError(err.message);
+    }).finally(() => {
+      if (!ignore) setLoading(false);
+    });
+    return () => { ignore = true; };
+  }, [token]);
 
   async function copyKey(key) {
     try {
@@ -39,7 +48,11 @@ function OrderHistory() {
           รายการเกมที่คุณซื้อสำเร็จ พร้อม CD-Key ของคุณ
         </p>
 
-        {orders.length === 0 ? (
+        {loading ? (
+          <p className="mt-10 text-center text-gray-400">กำลังโหลดประวัติการสั่งซื้อ...</p>
+        ) : error ? (
+          <p className="mt-10 rounded-xl bg-red-500/10 p-4 text-center text-red-400">{error}</p>
+        ) : orders.length === 0 ? (
 
           <div className="mt-10 rounded-2xl border border-white/10 bg-[#14141f] p-10 text-center">
 
@@ -91,7 +104,7 @@ function OrderHistory() {
                       วันที่สั่งซื้อ
                     </p>
 
-                    <p>{order.date}</p>
+                    <p>{new Date(order.date).toLocaleString('th-TH')}</p>
                   </div>
 
                   <div>

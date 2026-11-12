@@ -1,9 +1,8 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import { getGameKeys } from '../data/keyInventory';
-import { getGames } from '../data/gameCatalog';
+import { getGame } from '../api/backend';
 
 function MovieDetail() {
   const { id } = useParams();
@@ -13,6 +12,25 @@ function MovieDetail() {
   const { isLoggedIn, isGuest } = useAuth();
 
   const [quantity, setQuantity] = useState(1);
+  const [game, setGame] = useState(null);
+  const [status, setStatus] = useState('loading');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let ignore = false;
+    getGame(id).then((item) => {
+      if (!ignore) {
+        setGame(item);
+        setStatus('success');
+      }
+    }).catch((err) => {
+      if (!ignore) {
+        setError(err.message);
+        setStatus('error');
+      }
+    });
+    return () => { ignore = true; };
+  }, [id]);
 
   if (isGuest || !isLoggedIn) {
     return (
@@ -24,14 +42,14 @@ function MovieDetail() {
     );
   }
 
-  const game = getGames().find(
-    (item) => String(item.id) === String(id)
-  );
+  if (status === 'loading') {
+    return <p className="min-h-screen bg-[#09090f] p-10 text-center text-white">กำลังโหลดข้อมูลเกม...</p>;
+  }
 
-  if (!game) {
+  if (status === 'error' || !game) {
     return (
       <div className="min-h-screen bg-[#09090f] px-5 py-20 text-center text-white">
-        <h1 className="text-2xl font-bold">ไม่พบข้อมูลเกม</h1>
+        <h1 className="text-2xl font-bold">{status === 'error' ? error : 'ไม่พบข้อมูลเกม'}</h1>
 
         <p className="mt-3 text-gray-400">
           เกมนี้อาจถูกลบออกจากร้านค้าแล้ว
@@ -47,11 +65,11 @@ function MovieDetail() {
     );
   }
 
-  const availableKeys = getGameKeys(game);
+  const availableKeys = Number(game.availableKeys) || 0;
   const totalPrice = Number(game.discountPrice) * quantity;
 
   const increase = () => {
-    if (quantity < availableKeys.length) {
+    if (quantity < availableKeys) {
       setQuantity(quantity + 1);
     }
   };
@@ -64,16 +82,10 @@ function MovieDetail() {
 
   const buyGame = () => {
     const checkout = {
-      orderId: 'GK' + Date.now(),
       game: game,
       quantity: quantity,
       totalPrice: totalPrice
     };
-
-    localStorage.setItem(
-      'gamekey_pending_payment',
-      JSON.stringify(checkout)
-    );
 
     navigate('/payment', {
       state: checkout

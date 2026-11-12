@@ -1,9 +1,9 @@
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FeaturedCarousel from '../components/FeaturedCarousel';
 import MovieGrid from '../components/MovieGrid';
-import { getGames } from '../data/gameCatalog';
+import { getGames } from '../api/backend';
 
 const categories = [
   'ทั้งหมด',
@@ -11,15 +11,43 @@ const categories = [
   'RPG',
   'Adventure',
   'Racing',
-  'Horror'
+  'Horror',
+  'Simulation',
+  'Strategy',
+  'Indie'
 ];
 
 function Home() {
   const navigate = useNavigate();
 
-  const [games] = useState(getGames);
+  const [games, setGames] = useState([]);
+  const [status, setStatus] = useState('loading');
+  const [error, setError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('ทั้งหมด');
+
+  useEffect(() => {
+    let ignore = false;
+    async function load() {
+      setStatus('loading');
+      try {
+        const items = await getGames();
+        if (!ignore) {
+          setGames(items);
+          setStatus('success');
+          setError(null);
+        }
+      } catch (err) {
+        if (!ignore) {
+          setError(err);
+          setStatus('error');
+        }
+      }
+    }
+    load();
+    return () => { ignore = true; };
+  }, [reloadKey]);
 
   const openGameDetail = (game) => {
     navigate(`/game/${game.id}`, {
@@ -174,10 +202,11 @@ function Home() {
           </p>
         </div>
 
-        <FeaturedCarousel
-          movies={featuredGames}
-          onSelectGame={openGameDetail}
-        />
+        {status === 'success' ? (
+          <FeaturedCarousel movies={featuredGames} onSelectGame={openGameDetail} />
+        ) : (
+          <MovieGrid movies={[]} status={status} error={error} onRetry={() => setReloadKey((key) => key + 1)} />
+        )}
       </section>
 
       <section id="all-games" className="mx-auto max-w-7xl px-5 py-12 md:px-8">
@@ -219,7 +248,9 @@ function Home() {
 
         <MovieGrid
           movies={filteredGames}
-          status="success"
+          status={status}
+          error={error}
+          onRetry={() => setReloadKey((key) => key + 1)}
           onSelectGame={openGameDetail}
         />
 

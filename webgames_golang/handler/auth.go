@@ -1,101 +1,132 @@
 package handler
 
 import (
-    "encoding/json"
-    "errors"
-    "net/http"
-    "strings"
-    "unicode/utf8"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"regexp"
+	"strings"
+	"unicode/utf8"
 
-    "webgames_golang/auth"
-    "webgames_golang/store"
+	"webgames_golang/auth"
+	"webgames_golang/store"
 )
 
 type registerReq struct {
-    Username 	string `json:"username"`
-    Password    string `json:"password"`
-    Email       string `json:"email"`
+	Username    string `json:"username"`
+	DisplayName string `json:"displayName"`
+	Password    string `json:"password"`
+	Email       string `json:"email"`
 }
+
+var emailPattern = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
-    var req registerReq
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        writeError(w, http.StatusBadRequest, "BAD_JSON", "อ่านกล่อง JSON ไม่ออก")
-        return
-    }
-    email := strings.ToLower(strings.TrimSpace(req.Email))
-    username := strings.TrimSpace(req.Username)
-    switch {
-    case !strings.Contains(email, "@") || len(email) > 255:
-        writeError(w, http.StatusBadRequest, "BAD_EMAIL", "รูปแบบอีเมลไม่ถูกต้อง")
-        return
-    case utf8.RuneCountInString(req.Password) < 8 || len(req.Password) > 72:
-        writeError(w, http.StatusBadRequest, "BAD_PASSWORD", "รหัสผ่านต้องยาว 8 ตัวอักษรขึ้นไป และไม่เกิน 72 ไบต์")
-        return
-    case username == "" || utf8.RuneCountInString(username) > 50:
-        writeError(w, http.StatusBadRequest, "BAD_NAME", "ต้องมีชื่อที่แสดง และยาวไม่เกิน 50 ตัวอักษร")
-        return
-    }
-    hash, err := auth.HashPassword(req.Password)
-    if err != nil {
-        internal(w, err)
-        return
-    }
-    m, err := h.Store.CreateUser(r.Context(), username, hash, email)
-    if errors.Is(err, store.ErrEmailTaken) {
-        writeError(w, http.StatusConflict, "EMAIL_TAKEN", "อีเมลนี้มีบัญชีอยู่แล้ว")
-        return
-    }
-    if err != nil {
-        internal(w, err)
-        return
-    }
+	var req registerReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "BAD_JSON", "อ่านกล่อง JSON ไม่ออก")
+		return
+	}
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	username := strings.TrimSpace(req.DisplayName)
+	if username == "" {
+		username = strings.TrimSpace(req.Username)
+	}
+	switch {
+	case !emailPattern.MatchString(email) || utf8.RuneCountInString(email) > 100:
+		writeError(w, http.StatusBadRequest, "BAD_EMAIL", "รูปแบบอีเมลไม่ถูกต้อง")
+		return
+	case !validPassword(req.Password):
+		writeError(w, http.StatusBadRequest, "BAD_PASSWORD", "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก ตัวเลข และอักขระพิเศษ")
+		return
+	case username == "" || utf8.RuneCountInString(username) > 50:
+		writeError(w, http.StatusBadRequest, "BAD_NAME", "ต้องมีชื่อที่แสดง และยาวไม่เกิน 50 ตัวอักษร")
+		return
+	}
+	hash, err := auth.HashPassword(req.Password)
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	m, err := h.Store.CreateUser(r.Context(), username, hash, email)
+	if errors.Is(err, store.ErrEmailTaken) {
+		writeError(w, http.StatusConflict, "EMAIL_TAKEN", "อีเมลนี้มีบัญชีอยู่แล้ว")
+		return
+	}
+	if err != nil {
+		internal(w, err)
+		return
+	}
 
-    
-    writeJSON(w, http.StatusCreated, m)
+	writeJSON(w, http.StatusCreated, memberJSON(m))
 }
 
-
 type loginReq struct {
-    Email    string `json:"email"`
-    Password string `json:"password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-    var req loginReq
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        writeError(w, http.StatusBadRequest, "BAD_JSON", "อ่านกล่อง JSON ไม่ออก")
-        return
-    }
-    email := strings.ToLower(strings.TrimSpace(req.Email))
-    m, err := h.Store.UserByEmail(r.Context(), email)
-    if errors.Is(err, store.ErrNotFound) {
-        writeError(w, http.StatusUnauthorized, "BAD_CREDENTIALS", "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
-        return
-    }
-    if err != nil {
-        internal(w, err)
-        return
-    }
-    if !auth.CheckPassword(m.PasswordHash, req.Password) {
-        writeError(w, http.StatusUnauthorized, "BAD_CREDENTIALS", "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
-        return
-    }
-    token, err := h.Tickets.Issue(m.ID, m.Role)
-    if err != nil {
-        internal(w, err)
-        return
-    }
-    // ... ใน Login ตรงที่ไม่พบอีเมล ...
-    if errors.Is(err, store.ErrNotFound) {
-        auth.CheckPassword(dummyHash, req.Password) // เสียเวลาเท่ากับกรณีรหัสผิด
-        writeError(w, http.StatusUnauthorized, "BAD_CREDENTIALS", "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
-        return
-    }
-    writeJSON(w, http.StatusOK, map[string]any{"token": token, "member": m})
+	var req loginReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "BAD_JSON", "อ่านกล่อง JSON ไม่ออก")
+		return
+	}
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+	m, err := h.Store.UserByEmail(r.Context(), email)
+	if errors.Is(err, store.ErrNotFound) {
+		auth.CheckPassword(dummyHash, req.Password)
+		writeError(w, http.StatusUnauthorized, "BAD_CREDENTIALS", "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
+		return
+	}
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	if !auth.CheckPassword(m.PasswordHash, req.Password) {
+		writeError(w, http.StatusUnauthorized, "BAD_CREDENTIALS", "อีเมลหรือรหัสผ่านไม่ถูกต้อง")
+		return
+	}
+	token, err := h.Tickets.Issue(m.ID, m.Role)
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"token": token, "member": memberJSON(m)})
 }
 
+func validPassword(password string) bool {
+	if utf8.RuneCountInString(password) < 8 || len(password) > 72 {
+		return false
+	}
+	var upper, lower, digit, special bool
+	for _, r := range password {
+		switch {
+		case r >= 'A' && r <= 'Z':
+			upper = true
+		case r >= 'a' && r <= 'z':
+			lower = true
+		case r >= '0' && r <= '9':
+			digit = true
+		default:
+			special = true
+		}
+	}
+	return upper && lower && digit && special
+}
+
+func memberJSON(m store.User) map[string]any {
+	role := m.Role
+	if role == "customer" {
+		role = "member"
+	}
+	return map[string]any{
+		"id":          m.ID,
+		"email":       m.Email,
+		"displayName": m.Username,
+		"role":        role,
+	}
+}
 
 // dummyHash คือลายนิ้วมือหลอก ใช้เทียบเมื่อไม่พบอีเมล เพื่อให้เสียเวลาเท่ากัน
 var dummyHash, _ = auth.HashPassword("ไม่มีใครใช้รหัสนี้")
-

@@ -1,4 +1,4 @@
-import { apiFetch, login, postReview } from './backend';
+import { apiFetch, buyGame, getGames, getMe, login, postReview } from './backend';
 
 // ตัวช่วยสร้าง "คำตอบปลอม" ของ fetch: ใส่แค่ status กับ body ที่อยากให้ server ตอบ
 function fakeResponse(status, body) {
@@ -65,4 +65,27 @@ test('server ตอบมาไม่ใช่ JSON (เช่น ลืมร�
   fetch.mockResolvedValue({ ok: false, status: 404, json: () => Promise.reject(new SyntaxError('Unexpected token <')) });
 
   await expect(apiFetch('/api/movies')).rejects.toThrow('server ไม่ได้ตอบเป็น JSON');
+});
+
+test('โหลดเกมจาก Go API พร้อมตัวกรอง และคืนรายการ items', async () => {
+  fetch.mockResolvedValue(fakeResponse(200, { items: [{ id: 1, title: 'ELDEN RING' }] }));
+
+  await expect(getGames({ q: 'ring', genre: 'RPG' })).resolves.toEqual([
+    { id: 1, title: 'ELDEN RING' }
+  ]);
+  expect(fetch.mock.calls[0][0]).toBe('/api/games?q=ring&genre=RPG');
+});
+
+test('โปรไฟล์และคำสั่งซื้อใช้ routes และ payload ตาม Go API', async () => {
+  fetch.mockResolvedValue(fakeResponse(200, { id: 1 }));
+  await getMe('token');
+  expect(fetch.mock.calls[0][0]).toBe('/api/users/me');
+
+  fetch.mockResolvedValue(fakeResponse(201, { orderId: 'GK1' }));
+  await buyGame(7, 2, 'token');
+  const [url, options] = fetch.mock.calls[1];
+  expect(url).toBe('/api/game-orders');
+  expect(options.method).toBe('POST');
+  expect(options.headers.Authorization).toBe('Bearer token');
+  expect(options.body).toBe(JSON.stringify({ gameId: 7, quantity: 2 }));
 });

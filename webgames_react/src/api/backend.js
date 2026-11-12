@@ -1,8 +1,8 @@
-// ชั้นกลางสำหรับคุยกับ Backend ของทีมเรา (วันนี้คือ mock ที่พอร์ต 4000 สัปดาห์หน้าคือ Go)
+// ชั้นกลางสำหรับคุยกับ Go API (หรือ mock server ที่พอร์ต 4000)
 // ต่างจาก tmdb.js ตรงที่มี POST / PUT / DELETE และต้องแนบ token สำหรับ endpoint ที่ต้อง login
 
-// '' = origin เดียวกับหน้าเว็บ CRA จะ proxy /api ไปที่ http://localhost:4000 ให้ (ตั้งใน package.json)
-// ตอนต่อ Go จริง ตั้ง REACT_APP_API_URL=https://api.ทีมเรา.xyz ใน .env และบน Vercel
+// '' = origin เดียวกับหน้าเว็บ; CRA proxy /api ไปที่ Go บน localhost:8080
+// สำหรับ production ตั้ง REACT_APP_API_URL เป็น URL ของ Go API
 const BASE = process.env.REACT_APP_API_URL || '';
 
 
@@ -44,7 +44,7 @@ export function login(email, password) {
   return apiFetch('/api/auth/login', { method: 'POST', body: { email, password } });   // ได้ { token, member }
 }
 export function getMe(token) {
-  return apiFetch('/api/me', { token });
+  return apiFetch('/api/users/me', { token });
 }
 
 // ---------- รีวิว ----------
@@ -88,14 +88,61 @@ export async function getGenres() {
 
 // ---------- หลังบ้าน (ทุกตัวต้องแนบ token ของ admin ถ้าเป็น member Go ตอบ 403) ----------
 export function getAdminStats(token) {
-  return apiFetch('/api/admin/stats', { token });
+  return apiFetch('/api/admin/dashboard', { token });
 }
 export async function getAdminMembers(token) {
-  const data = await apiFetch('/api/admin/members', { token });
+  const data = await apiFetch('/api/admin/users', { token });
   return data.items;
 }
 export function setMemberRole(memberId, role, token) {
-  return apiFetch(`/api/admin/members/${memberId}/role`, { method: 'PUT', body: { role }, token });
+  return apiFetch(`/api/admin/users/${memberId}/role`, { method: 'PUT', body: { role }, token });
+}
+
+// ---------- เกมและคลังคีย์ ----------
+export async function getGames({ q = '', genre = '' } = {}) {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (genre) params.set('genre', genre);
+  const query = params.toString();
+  const suffix = query ? `?${query}` : '';
+  const data = await apiFetch(`/api/games${suffix}`);
+  return data.items;
+}
+export function getGame(gameId) {
+  return apiFetch(`/api/games/${gameId}`);
+}
+export function createGame(fields, token) {
+  return apiFetch('/api/admin/games', { method: 'POST', body: fields, token });
+}
+export function updateGame(gameId, fields, token) {
+  return apiFetch(`/api/admin/games/${gameId}`, { method: 'PUT', body: fields, token });
+}
+export function deleteGame(gameId, token) {
+  return apiFetch(`/api/admin/games/${gameId}`, { method: 'DELETE', token });
+}
+export async function getGameKeys(gameId, token) {
+  const data = await apiFetch(`/api/admin/games/${gameId}/keys`, { token });
+  return data.items;
+}
+export async function addGameKeys(gameId, keys, token) {
+  const data = await apiFetch(`/api/admin/games/${gameId}/keys`, {
+    method: 'POST', body: { keys }, token,
+  });
+  return data.items;
+}
+export function deleteGameKey(gameId, keyId, token) {
+  return apiFetch(`/api/admin/games/${gameId}/keys/${keyId}`, { method: 'DELETE', token });
+}
+export function buyGame(gameId, quantity, token) {
+  return apiFetch('/api/game-orders', { method: 'POST', body: { gameId, quantity }, token });
+}
+export async function getGameOrders(token) {
+  const data = await apiFetch('/api/users/me/game-orders', { token });
+  return data.items;
+}
+export async function getAdminGameOrders(token) {
+  const data = await apiFetch('/api/admin/game-orders', { token });
+  return data.items;
 }
 export function getAdminMovie(movieId, token) {
   return apiFetch(`/api/admin/movies/${movieId}`, { token });

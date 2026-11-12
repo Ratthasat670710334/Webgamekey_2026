@@ -1,7 +1,7 @@
 BEGIN;
 
 -- 1. ตารางผู้ใช้งาน (Users: Admin & Customer)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY, -- ใช้ SERIAL สำหรับรันเลขอัตโนมัติ
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE users (
 );
 
 -- 2. ตารางแพ็กเกจคูปอง (Coupon Packages)
-CREATE TABLE coupon_packages (
+CREATE TABLE IF NOT EXISTS coupon_packages (
     package_id SERIAL PRIMARY KEY,
     game_name VARCHAR(100) NOT NULL,
     title VARCHAR(150) NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE coupon_packages (
 );
 
 -- 3. ตารางรหัสคูปอง (Coupon Codes) - เก็บ Code ที่ไม่ซ้ำกัน
-CREATE TABLE coupon_codes (
+CREATE TABLE IF NOT EXISTS coupon_codes (
     code_id SERIAL PRIMARY KEY,
     package_id INT NOT NULL REFERENCES coupon_packages(package_id) ON DELETE CASCADE,
     coupon_code VARCHAR(100) NOT NULL UNIQUE,
@@ -33,7 +33,7 @@ CREATE TABLE coupon_codes (
 );
 
 -- 4. ตารางประวัติการสั่งซื้อ (Orders / Purchase History)
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     order_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id),
     code_id INT NOT NULL UNIQUE REFERENCES coupon_codes(code_id), -- UNIQUE เพื่อป้องกันการขายโค้ดซ้ำ
@@ -41,6 +41,44 @@ CREATE TABLE orders (
     purchased_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Product catalog used by the GAMEKEY storefront.
+CREATE TABLE IF NOT EXISTS games (
+    id BIGSERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    genre VARCHAR(50) NOT NULL,
+    price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
+    discount_price NUMERIC(10, 2) NOT NULL CHECK (discount_price >= 0),
+    discount INT NOT NULL CHECK (discount BETWEEN 0 AND 100),
+    rating NUMERIC(3, 1) NOT NULL CHECK (rating BETWEEN 0 AND 10),
+    platform VARCHAR(100) NOT NULL,
+    region VARCHAR(100) NOT NULL,
+    poster TEXT NOT NULL,
+    detail TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'พร้อมจำหน่าย',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
+CREATE TABLE IF NOT EXISTS game_orders (
+    order_id BIGSERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id),
+    game_id BIGINT NOT NULL REFERENCES games(id) ON DELETE RESTRICT,
+    quantity INT NOT NULL CHECK (quantity > 0),
+    total_price NUMERIC(10, 2) NOT NULL CHECK (total_price >= 0),
+    status VARCHAR(30) NOT NULL DEFAULT 'ชำระเงินสำเร็จ',
+    purchased_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS game_keys (
+    key_id BIGSERIAL PRIMARY KEY,
+    game_id BIGINT NOT NULL REFERENCES games(id) ON DELETE CASCADE,
+    key_code VARCHAR(255) NOT NULL UNIQUE,
+    order_id BIGINT REFERENCES game_orders(order_id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sold_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS game_keys_available_idx ON game_keys(game_id, key_id) WHERE order_id IS NULL;
+CREATE INDEX IF NOT EXISTS game_orders_user_purchased_idx ON game_orders(user_id, purchased_at DESC);
 
 COMMIT;

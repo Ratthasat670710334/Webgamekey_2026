@@ -1,6 +1,7 @@
 
-import { useState } from 'react';
-import { getGames, saveGames } from '../../data/gameCatalog';
+import { useEffect, useState } from 'react';
+import { useAuth } from '../../auth/AuthContext';
+import { getGames, createGame, updateGame, deleteGame } from '../../api/backend';
 
 const emptyGame = {
   title: '',
@@ -17,9 +18,28 @@ const emptyGame = {
 };
 
 function AdminGames() {
-  const [games, setGames] = useState(getGames);
+  const { token } = useAuth();
+  const [games, setGames] = useState([]);
   const [form, setForm] = useState(emptyGame);
   const [editId, setEditId] = useState(null);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  async function loadGames() {
+    setLoading(true);
+    try {
+      setGames(await getGames());
+      setError('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadGames();
+  }, []);
 
   function updateField(e) {
     const { name, value } = e.target;
@@ -35,7 +55,7 @@ function AdminGames() {
     setEditId(null);
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     if (!form.title.trim()) {
@@ -47,24 +67,27 @@ function AdminGames() {
 
     const gameData = {
       ...form,
-      id: editId === null ? Date.now() : editId,
       price: Number(form.price),
       discountPrice: Number(form.discountPrice),
       discount: Number(form.discount),
       rating: Number(form.rating)
     };
 
-    if (editId !== null) {
-      updatedGames = games.map((game) =>
-        game.id === editId ? gameData : game
-      );
-    } else {
-      updatedGames = [...games, gameData];
+    setError('');
+    try {
+      const saved = editId === null
+        ? await createGame(gameData, token)
+        : await updateGame(editId, gameData, token);
+      if (editId !== null) {
+        updatedGames = games.map((game) => game.id === editId ? saved : game);
+      } else {
+        updatedGames = [...games, saved];
+      }
+      setGames(updatedGames);
+      resetForm();
+    } catch (err) {
+      setError(err.message);
     }
-
-    setGames(updatedGames);
-    saveGames(updatedGames);
-    resetForm();
   }
 
   function editGame(game) {
@@ -78,18 +101,18 @@ function AdminGames() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function deleteGame(id) {
+  async function removeGame(id) {
     if (!window.confirm('ต้องการลบเกมนี้ใช่หรือไม่?')) {
       return;
     }
 
-    const updatedGames = games.filter((game) => game.id !== id);
-
-    setGames(updatedGames);
-    saveGames(updatedGames);
-
-    if (editId === id) {
-      resetForm();
+    setError('');
+    try {
+      await deleteGame(id, token);
+      setGames(games.filter((game) => game.id !== id));
+      if (editId === id) resetForm();
+    } catch (err) {
+      setError(err.message);
     }
   }
 
@@ -101,6 +124,8 @@ function AdminGames() {
           เพิ่ม แก้ไข และลบเกมในร้านค้า
         </p>
       </div>
+
+      {error && <p className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-400">{error}</p>}
 
       <form
         onSubmit={handleSubmit}
@@ -135,7 +160,7 @@ function AdminGames() {
               onChange={updateField}
               className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none"
             >
-              {['Action', 'RPG', 'Adventure', 'Racing', 'Horror'].map((genre) => (
+              {['Action', 'RPG', 'Adventure', 'Racing', 'Horror', 'Simulation', 'Strategy', 'Indie'].map((genre) => (
                 <option key={genre} value={genre}>{genre}</option>
               ))}
             </select>
@@ -273,9 +298,7 @@ function AdminGames() {
 
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-lg font-bold">รายการเกมทั้งหมด</h3>
-        <span className="text-sm text-gray-400">
-          {games.length} เกม
-        </span>
+        <span className="text-sm text-gray-400">{loading ? 'กำลังโหลด...' : `${games.length} เกม`}</span>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-white/10">
@@ -308,7 +331,7 @@ function AdminGames() {
                       แก้ไข
                     </button>
                     <button
-                      onClick={() => deleteGame(game.id)}
+                      onClick={() => removeGame(game.id)}
                       className="rounded-lg bg-red-500/10 px-3 py-2 text-red-400 hover:bg-red-500/20"
                     >
                       ลบ
@@ -320,7 +343,7 @@ function AdminGames() {
           </tbody>
         </table>
 
-        {games.length === 0 && (
+        {!loading && games.length === 0 && (
           <p className="p-8 text-center text-gray-500">
             ยังไม่มีเกมในร้านค้า
           </p>

@@ -43,6 +43,8 @@ func main() {
 	mux.HandleFunc("POST /api/auth/register", h.Register)
 	mux.HandleFunc("POST /api/auth/login", h.Login)
 	mux.HandleFunc("GET /api/users/me", login(h.Me))
+	mux.HandleFunc("GET /api/games", h.Games)
+	mux.HandleFunc("GET /api/games/{id}", h.Game)
 
 	//Customers
 	mux.HandleFunc("GET /api/coupons", h.GetCoupon)
@@ -50,11 +52,21 @@ func main() {
 	mux.HandleFunc("GET /api/coupons/{id}", h.GetCouponDetail)
 	mux.HandleFunc("POST /api/coupons/{id}/buy", login(h.BuyCoupon))
 	mux.HandleFunc("GET /api/users/me/orders", login(h.Orders))
+	mux.HandleFunc("POST /api/game-orders", login(h.BuyGame))
+	mux.HandleFunc("GET /api/users/me/game-orders", login(h.GameOrders))
 
 	//Admin
 	mux.HandleFunc("GET /api/admin/stats", admin(h.AdminStats))
+	mux.HandleFunc("GET /api/admin/dashboard", admin(h.GameDashboard))
+	mux.HandleFunc("GET /api/admin/game-orders", admin(h.AdminGameOrders))
 	mux.HandleFunc("GET /api/admin/users", admin(h.AdminUser))
 	mux.HandleFunc("PUT /api/admin/users/{id}/role", admin(h.AdminSetRole))
+	mux.HandleFunc("POST /api/admin/games", admin(h.AdminCreateGame))
+	mux.HandleFunc("PUT /api/admin/games/{id}", admin(h.AdminUpdateGame))
+	mux.HandleFunc("DELETE /api/admin/games/{id}", admin(h.AdminDeleteGame))
+	mux.HandleFunc("GET /api/admin/games/{id}/keys", admin(h.AdminListGameKeys))
+	mux.HandleFunc("POST /api/admin/games/{id}/keys", admin(h.AdminAddGameKeys))
+	mux.HandleFunc("DELETE /api/admin/games/{id}/keys/{keyId}", admin(h.AdminDeleteGameKey))
 	mux.HandleFunc("GET /api/admin/orders", admin(h.GetOrders))
 	mux.HandleFunc("GET /api/admin/coupons/{id}", admin(h.AdminGetCoupon))
 	mux.HandleFunc("POST /api/admin/coupons", admin(h.AdminCreateCoupon))

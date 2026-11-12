@@ -7,15 +7,15 @@ import { getAdminMembers, setMemberRole } from '../../api/backend';
 
 jest.mock('../../api/backend');   // backend.js ทั้งไฟล์กลายเป็นของปลอม เรากำหนดคำตอบเอง
 
-const ME = { id: 2, displayName: 'Admin', role: 'admin' };
+const ME = { id: 2, email: 'admin@moviehub.test', displayName: 'Admin', role: 'admin' };
 const MEMBERS = [
   { id: 1, email: 'demo@moviehub.test', displayName: 'Demo', role: 'member', createdAt: '2026-09-01T09:00:00.000Z' },
   { id: 2, email: 'admin@moviehub.test', displayName: 'Admin', role: 'admin', createdAt: '2026-09-01T09:00:00.000Z' },
 ];
 
 function renderPage() {
-  localStorage.setItem('moviehub.token', 'mock.2.abc');
-  localStorage.setItem('moviehub.member', JSON.stringify(ME));
+  localStorage.setItem('gamekey_token', 'mock.2.abc');
+  localStorage.setItem('gamekey_member', JSON.stringify(ME));
   return render(
     <AuthProvider>
       <MemoryRouter><AdminMembers /></MemoryRouter>

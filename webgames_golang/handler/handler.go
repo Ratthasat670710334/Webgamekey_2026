@@ -28,7 +28,7 @@ func (h *Handler) Me(w http.ResponseWriter, r *http.Request) {
 		internal(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, m)
+	writeJSON(w, http.StatusOK, memberJSON(m))
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

@@ -1,34 +1,19 @@
 
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { purchaseGameKeys } from '../data/keyInventory';
+import { useAuth } from '../auth/AuthContext';
+import { buyGame } from '../api/backend';
 
 function Payment() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { token } = useAuth();
 
-  const [checkout] = useState(() => {
-    if (location.state) {
-      return location.state;
-    }
-
-    return JSON.parse(
-      localStorage.getItem('gamekey_pending_payment') || 'null'
-    );
-  });
+  const [checkout] = useState(() => location.state || null);
 
   const [timeLeft, setTimeLeft] = useState(900);
   const [error, setError] = useState('');
   const [isPaying, setIsPaying] = useState(false);
-
-  useEffect(() => {
-    if (checkout) {
-      localStorage.setItem(
-        'gamekey_pending_payment',
-        JSON.stringify(checkout)
-      );
-    }
-  }, [checkout]);
 
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -75,7 +60,7 @@ function Payment() {
     `GAMEKEY STORE MOCK PAYMENT | ORDER: ${checkout.orderId || 'NEW'} | AMOUNT: ${totalPrice} THB`
   );
 
-  const confirmPayment = () => {
+  const confirmPayment = async () => {
     if (isPaying || timeLeft <= 0) {
       return;
     }
@@ -84,45 +69,7 @@ function Payment() {
     setError('');
 
     try {
-      const savedOrders = JSON.parse(
-        localStorage.getItem('gamekey_orders') || '[]'
-      );
-
-      const existingOrder = savedOrders.find(
-        (order) => order.orderId === checkout.orderId
-      );
-
-      if (existingOrder) {
-        localStorage.removeItem('gamekey_pending_payment');
-        navigate('/orders');
-        return;
-      }
-
-      const purchasedKeys = purchaseGameKeys(game, quantity);
-
-      const newOrder = {
-        orderId: checkout.orderId || 'GK' + Date.now(),
-        gameId: game.id,
-        title: game.title,
-        poster: game.poster,
-        platform: game.platform,
-        region: game.region,
-        quantity: quantity,
-        totalPrice: totalPrice,
-        date: new Date().toLocaleString('th-TH'),
-        status: 'ชำระเงินสำเร็จ',
-        keys: purchasedKeys
-      };
-
-      savedOrders.unshift(newOrder);
-
-      localStorage.setItem(
-        'gamekey_orders',
-        JSON.stringify(savedOrders)
-      );
-
-      localStorage.removeItem('gamekey_pending_payment');
-
+      await buyGame(game.id, quantity, token);
       navigate('/orders');
     } catch (err) {
       setError(err.message || 'เกิดข้อผิดพลาดในการชำระเงิน');
@@ -258,7 +205,6 @@ function Payment() {
                 <button
                   type="button"
                   onClick={() => {
-                    localStorage.removeItem('gamekey_pending_payment');
                     navigate('/');
                   }}
                   className="mt-3 block w-full rounded-lg bg-red-600 px-4 py-3 font-semibold text-white hover:bg-red-500"

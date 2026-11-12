@@ -17,7 +17,13 @@ func (h *Handler) AdminUser(w http.ResponseWriter, r *http.Request) {
 		internal(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": ms})
+	items := make([]map[string]any, 0, len(ms))
+	for _, m := range ms {
+		item := memberJSON(m)
+		item["createdAt"] = m.CreatedAt
+		items = append(items, item)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
 func (h *Handler) AdminStats(w http.ResponseWriter, r *http.Request) {
@@ -45,15 +51,19 @@ func (h *Handler) AdminSetRole(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "BAD_JSON", "อ่านกล่อง JSON ไม่ออก")
 		return
 	}
-	if req.Role != "customer" && req.Role != "admin" {
-		writeError(w, http.StatusBadRequest, "BAD_ROLE", "role ต้องเป็น customer หรือ admin")
+	role := req.Role
+	if role == "member" {
+		role = "customer"
+	}
+	if role != "customer" && role != "admin" {
+		writeError(w, http.StatusBadRequest, "BAD_ROLE", "role ต้องเป็น member หรือ admin")
 		return
 	}
 	if me, _ := mw.UserID(r.Context()); me == id {
 		writeError(w, http.StatusBadRequest, "SELF_ROLE", "เปลี่ยนบทบาทของตัวเองไม่ได้ ให้ admin คนอื่นทำแทน")
 		return
 	}
-	m, err := h.Store.UpdateUserRole(r.Context(), id, req.Role)
+	m, err := h.Store.UpdateUserRole(r.Context(), id, role)
 	if errors.Is(err, store.ErrNotFound) {
 		writeError(w, http.StatusNotFound, "USER_NOT_FOUND", "ไม่พบสมาชิกคนนี้")
 		return
@@ -62,7 +72,9 @@ func (h *Handler) AdminSetRole(w http.ResponseWriter, r *http.Request) {
 		internal(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, m)
+	item := memberJSON(m)
+	item["createdAt"] = m.CreatedAt
+	writeJSON(w, http.StatusOK, item)
 }
 
 type CouponReq struct {

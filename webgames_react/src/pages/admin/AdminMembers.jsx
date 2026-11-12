@@ -56,19 +56,19 @@ function AdminMembers() {
     <div>
       <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">สมาชิก</h2>
-          {status === 'success' && <p className="text-sm text-slate-500">ทั้งหมด {members.length} คน (admin {members.filter(m => m.role === 'admin').length})</p>}
+          <h2 className="text-lg font-semibold text-white">สมาชิก</h2>
+          {status === 'success' && <p className="text-sm text-gray-400">ทั้งหมด {members.length} คน (admin {members.filter(m => m.role === 'admin').length})</p>}
         </div>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ค้นชื่อหรืออีเมล" className={inputClass + ' md:w-64'} />
       </div>
 
-      {actionError && <p className="mb-3 text-sm text-red-600">{actionError}</p>}
+      {actionError && <p className="mb-3 text-sm text-red-400">{actionError}</p>}
       {status === 'loading' && <Loading />}
       {status === 'error' && <ErrorBox error={error} onRetry={() => setReloadKey(k => k + 1)} />}
       {status === 'success' && (
         <div className="overflow-x-auto rounded-xl border border-emerald-100 bg-white">
           <table className="w-full text-sm">
-            <thead className="bg-purple-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-emerald-50 text-left text-xs uppercase tracking-wide text-slate-700">
               <tr>
                 <th className="px-4 py-3">สมาชิก</th>
                 <th className="px-4 py-3">บทบาท</th>
@@ -83,17 +83,17 @@ function AdminMembers() {
                   <tr key={m.id} className="hover:bg-emerald-50/40">
                     <td className="px-4 py-2">
                       <p className="font-medium text-slate-900">{m.displayName} {isMe && <span className="text-xs text-slate-400">(คุณ)</span>}</p>
-                      <p className="text-xs text-slate-500">{m.email}</p>
+                      <p className="text-xs text-slate-600">{m.email}</p>
                     </td>
                     <td className="px-4 py-2">
-                      <span className={'rounded-full px-2 py-0.5 text-xs ' + (m.role === 'admin' ? 'bg-purple-100 text-emerald-700' : 'bg-slate-100 text-slate-600')}>
+                      <span className={'rounded-full px-2 py-0.5 text-xs font-medium ' + (m.role === 'admin' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700')}>
                         {m.role}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-slate-600">{m.createdAt ? dateTH(m.createdAt) : '-'}</td>
+                    <td className="px-4 py-2 text-slate-700">{m.createdAt ? dateTH(m.createdAt) : '-'}</td>
                     <td className="px-4 py-2 text-right">
                       <button onClick={() => setTarget(m)} disabled={isMe}
-                              className="text-emerald-600 hover:underline disabled:cursor-not-allowed disabled:text-slate-300">
+                              className="font-medium text-emerald-700 hover:underline disabled:cursor-not-allowed disabled:text-slate-400">
                         {m.role === 'admin' ? 'ลดเป็น member' : 'เลื่อนเป็น admin'}
                       </button>
                     </td>
@@ -101,7 +101,7 @@ function AdminMembers() {
                 );
               })}
               {shown.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-10 text-center text-slate-400">ไม่พบสมาชิก</td></tr>
+                <tr><td colSpan={4} className="px-4 py-10 text-center text-slate-600">ไม่พบสมาชิก</td></tr>
               )}
             </tbody>
           </table>

@@ -68,7 +68,7 @@ function AdminMembers() {
       {status === 'success' && (
         <div className="overflow-x-auto rounded-xl border border-emerald-100 bg-white">
           <table className="w-full text-sm">
-            <thead className="bg-emerald-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
+            <thead className="bg-purple-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3">สมาชิก</th>
                 <th className="px-4 py-3">บทบาท</th>
@@ -86,7 +86,7 @@ function AdminMembers() {
                       <p className="text-xs text-slate-500">{m.email}</p>
                     </td>
                     <td className="px-4 py-2">
-                      <span className={'rounded-full px-2 py-0.5 text-xs ' + (m.role === 'admin' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600')}>
+                      <span className={'rounded-full px-2 py-0.5 text-xs ' + (m.role === 'admin' ? 'bg-purple-100 text-emerald-700' : 'bg-slate-100 text-slate-600')}>
                         {m.role}
                       </span>
                     </td>

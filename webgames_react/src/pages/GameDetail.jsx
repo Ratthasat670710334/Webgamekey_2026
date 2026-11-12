@@ -1,15 +1,15 @@
 
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { getGame } from '../api/backend';
 
-function MovieDetail() {
+function GameDetail() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { isLoggedIn, isGuest } = useAuth();
+  const { isLoggedIn } = useAuth();
 
   const [quantity, setQuantity] = useState(1);
   const [game, setGame] = useState(null);
@@ -31,16 +31,6 @@ function MovieDetail() {
     });
     return () => { ignore = true; };
   }, [id]);
-
-  if (isGuest || !isLoggedIn) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location }}
-      />
-    );
-  }
 
   if (status === 'loading') {
     return <p className="min-h-screen bg-[#09090f] p-10 text-center text-white">กำลังโหลดข้อมูลเกม...</p>;
@@ -81,6 +71,11 @@ function MovieDetail() {
   };
 
   const buyGame = () => {
+    if (!isLoggedIn) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
     const checkout = {
       game: game,
       quantity: quantity,
@@ -173,7 +168,7 @@ function MovieDetail() {
                 </p>
 
                 <p className="mt-1 text-xl font-bold text-green-400">
-                  {availableKeys.length} คีย์
+                  {availableKeys} คีย์
                 </p>
               </div>
 
@@ -197,7 +192,7 @@ function MovieDetail() {
 
                   <button
                     onClick={increase}
-                    disabled={quantity >= availableKeys.length}
+                    disabled={quantity >= availableKeys}
                     className="h-11 w-11 rounded-lg border border-white/10 bg-[#20202d] text-xl transition hover:border-purple-500 disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     +
@@ -250,4 +245,4 @@ function MovieDetail() {
   );
 }
 
-export default MovieDetail;
+export default GameDetail;

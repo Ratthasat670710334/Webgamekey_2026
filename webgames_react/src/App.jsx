@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import RequireRole from './components/RequireRole';
 
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminGames from './pages/admin/AdminGames';
@@ -11,7 +12,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminMembers from './pages/admin/AdminMembers';
 
 import Home from './pages/Home';
-import MovieDetail from './pages/MovieDetail';
+import GameDetail from './pages/GameDetail';
 import OrderHistory from './pages/OrderHistory';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -30,7 +31,7 @@ function App() {
 
           <Route path="/about" element={<About />} />
 
-          <Route path="/game/:id" element={<MovieDetail />} />
+          <Route path="/game/:id" element={<GameDetail />} />
 
           <Route
             path="/payment"
@@ -57,9 +58,9 @@ function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute role="admin">
+              <RequireRole role="admin">
                 <AdminLayout />
-              </ProtectedRoute>
+              </RequireRole>
             }
           >
             <Route index element={<Navigate to="games" replace />} />

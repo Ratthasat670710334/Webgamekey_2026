@@ -4,14 +4,11 @@ import { AuthProvider } from '../auth/AuthContext';
 import RequireRole from './RequireRole';
 
 function Backoffice() { return <h1>หลังบ้าน</h1>; }
-function LoginPage() { return <h1>หน้า Login</h1>; }
-
 function renderAt(path) {
   return render(
     <AuthProvider>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
           <Route path="/admin" element={<RequireRole role="admin"><Backoffice /></RequireRole>} />
         </Routes>
       </MemoryRouter>
@@ -27,10 +24,11 @@ function loginAs(member) {
 
 beforeEach(() => localStorage.clear());
 
-test('ยังไม่ login ต้องถูกพาไปหน้า Login', () => {
+test('ยังไม่ login ต้องเห็นหน้า 403', () => {
   renderAt('/admin');
 
-  expect(screen.getByRole('heading', { name: 'หน้า Login' })).toBeInTheDocument();
+  expect(screen.getByText('403')).toBeInTheDocument();
+  expect(screen.getByText(/บัญชีของคุณเป็น guest/)).toBeInTheDocument();
   expect(screen.queryByText('หลังบ้าน')).not.toBeInTheDocument();
 });
 
@@ -40,7 +38,6 @@ test('login เป็น member ต้องเห็นหน้า 403 ไม�
 
   expect(screen.getByText('403')).toBeInTheDocument();
   expect(screen.queryByText('หลังบ้าน')).not.toBeInTheDocument();
-  expect(screen.queryByText('หน้า Login')).not.toBeInTheDocument();
 });
 
 test('login เป็น admin ต้องเห็นหลังบ้าน', () => {

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 
 function Login() {
@@ -12,6 +12,8 @@ function Login() {
   const { login, loginAsGuest } = useAuth();
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.from || '/';
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -21,7 +23,7 @@ function Login() {
 
     try {
       await login(email, password);
-      navigate('/', { replace: true });
+      navigate(returnTo, { replace: true });
     } catch (err) {
       setError(err.message);
       setStatus('typing');
@@ -30,7 +32,7 @@ function Login() {
 
   function handleGuest() {
     loginAsGuest();
-    navigate('/', { replace: true });
+    navigate(returnTo, { replace: true });
   }
 
   return (

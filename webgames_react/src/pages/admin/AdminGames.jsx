@@ -1,331 +1,213 @@
+import { useEffect, useState } from 'react';
+import { useAuth } from '../../auth/AuthContext';
+import {
+  createCoupon,
+  deleteCoupon,
+  getAdminCoupons,
+  updateCoupon
+} from '../../api/backend';
 
-import { useState } from 'react';
-import { getGames, saveGames } from '../../data/gameCatalog';
-
-const emptyGame = {
+const EMPTY_FORM = {
+  gameName: '',
   title: '',
-  genre: 'Action',
-  price: 0,
-  discountPrice: 0,
-  discount: 0,
-  rating: 0,
-  platform: 'Steam',
-  region: 'Global',
-  poster: '',
-  detail: '',
-  status: 'พร้อมจำหน่าย'
+  description: '',
+  price: '',
+  maxPerUser: '1',
+  isActive: true
 };
 
 function AdminGames() {
-  const [games, setGames] = useState(getGames);
-  const [form, setForm] = useState(emptyGame);
+  const { token } = useAuth();
+  const [coupons, setCoupons] = useState([]);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [editId, setEditId] = useState(null);
+  const [status, setStatus] = useState('loading');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  function updateField(e) {
-    const { name, value } = e.target;
+  useEffect(() => {
+    let ignore = false;
+    setStatus('loading');
+    getAdminCoupons(token)
+      .then((items) => {
+        if (!ignore) {
+          setCoupons(items);
+          setStatus('success');
+        }
+      })
+      .catch((err) => {
+        if (!ignore) {
+          setError(err.message);
+          setStatus('error');
+        }
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [token, reloadKey]);
 
-    setForm({
-      ...form,
-      [name]: value
-    });
+  function updateField(event) {
+    const { name, value, type, checked } = event.target;
+    setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }));
   }
 
   function resetForm() {
-    setForm(emptyGame);
+    setForm(EMPTY_FORM);
     setEditId(null);
+    setError('');
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-
-    if (!form.title.trim()) {
-      alert('กรุณากรอกชื่อเกม');
-      return;
-    }
-
-    let updatedGames;
-
-    const gameData = {
-      ...form,
-      id: editId === null ? Date.now() : editId,
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    const payload = {
+      game_name: form.gameName.trim(),
+      title: form.title.trim(),
+      description: form.description.trim(),
       price: Number(form.price),
-      discountPrice: Number(form.discountPrice),
-      discount: Number(form.discount),
-      rating: Number(form.rating)
+      max_per_user: Number(form.maxPerUser),
+      is_active: form.isActive
     };
-
-    if (editId !== null) {
-      updatedGames = games.map((game) =>
-        game.id === editId ? gameData : game
-      );
-    } else {
-      updatedGames = [...games, gameData];
-    }
-
-    setGames(updatedGames);
-    saveGames(updatedGames);
-    resetForm();
-  }
-
-  function editGame(game) {
-    setForm({
-      ...game,
-      price: game.price,
-      discountPrice: game.discountPrice
-    });
-
-    setEditId(game.id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function deleteGame(id) {
-    if (!window.confirm('ต้องการลบเกมนี้ใช่หรือไม่?')) {
-      return;
-    }
-
-    const updatedGames = games.filter((game) => game.id !== id);
-
-    setGames(updatedGames);
-    saveGames(updatedGames);
-
-    if (editId === id) {
+    try {
+      if (editId === null) {
+        await createCoupon(payload, token);
+      } else {
+        await updateCoupon(editId, payload, token);
+      }
       resetForm();
+      setReloadKey((key) => key + 1);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function editCoupon(coupon) {
+    setForm({
+      gameName: coupon.genre,
+      title: coupon.title,
+      description: coupon.detail,
+      price: String(coupon.price),
+      maxPerUser: String(coupon.maxPerUser),
+      isActive: coupon.isActive
+    });
+    setEditId(coupon.id);
+  }
+
+  async function removeCoupon(coupon) {
+    if (!window.confirm(`ต้องการลบ "${coupon.title}" ใช่หรือไม่?`)) return;
+    setError('');
+    try {
+      await deleteCoupon(coupon.id, token);
+      if (editId === coupon.id) resetForm();
+      setReloadKey((key) => key + 1);
+    } catch (err) {
+      setError(err.message);
     }
   }
 
   return (
     <div>
       <div className="mb-8">
-        <h2 className="text-2xl font-bold">จัดการเกม</h2>
+        <h2 className="text-2xl font-bold">จัดการแพ็กเกจเกม</h2>
         <p className="mt-2 text-sm text-gray-400">
-          เพิ่ม แก้ไข และลบเกมในร้านค้า
+          รายการและการแก้ไขเชื่อมกับ coupon packages ในฐานข้อมูล
         </p>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="mb-8 rounded-2xl border border-white/10 bg-[#12121d] p-5"
-      >
-        <h3 className="mb-5 text-lg font-bold">
-          {editId === null ? 'เพิ่มเกมใหม่' : 'แก้ไขข้อมูลเกม'}
-        </h3>
-
+      <form onSubmit={handleSubmit} className="mb-8 rounded-2xl border border-white/10 bg-[#12121d] p-5">
+        <h3 className="mb-5 text-lg font-bold">{editId === null ? 'เพิ่มแพ็กเกจ' : 'แก้ไขแพ็กเกจ'}</h3>
         <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-2 block text-sm text-gray-400">
-              ชื่อเกม
-            </label>
-            <input
-              name="title"
-              value={form.title}
-              onChange={updateField}
-              required
-              className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none focus:border-purple-500"
-              placeholder="ชื่อเกม"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-gray-400">
-              แนวเกม
-            </label>
-            <select
-              name="genre"
-              value={form.genre}
-              onChange={updateField}
-              className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none"
-            >
-              {['Action', 'RPG', 'Adventure', 'Racing', 'Horror'].map((genre) => (
-                <option key={genre} value={genre}>{genre}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-gray-400">
-              ราคาปกติ
-            </label>
-            <input
-              type="number"
-              name="price"
-              min="0"
-              value={form.price}
-              onChange={updateField}
-              className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-gray-400">
-              ราคาขาย
-            </label>
-            <input
-              type="number"
-              name="discountPrice"
-              min="0"
-              value={form.discountPrice}
-              onChange={updateField}
-              className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-gray-400">
-              ส่วนลด (%)
-            </label>
-            <input
-              type="number"
-              name="discount"
-              min="0"
-              max="100"
-              value={form.discount}
-              onChange={updateField}
-              className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-gray-400">
-              คะแนนเกม
-            </label>
-            <input
-              type="number"
-              name="rating"
-              min="0"
-              max="10"
-              step="0.1"
-              value={form.rating}
-              onChange={updateField}
-              className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-gray-400">
-              Platform
-            </label>
-            <input
-              name="platform"
-              value={form.platform}
-              onChange={updateField}
-              className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm text-gray-400">
-              Region
-            </label>
-            <input
-              name="region"
-              value={form.region}
-              onChange={updateField}
-              className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm text-gray-400">
-              URL รูปภาพเกม
-            </label>
-            <input
-              name="poster"
-              value={form.poster}
-              onChange={updateField}
-              className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none"
-              placeholder="https://..."
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-2 block text-sm text-gray-400">
-              รายละเอียดเกม
-            </label>
-            <textarea
-              name="detail"
-              value={form.detail}
-              onChange={updateField}
-              rows="3"
-              className="w-full rounded-lg border border-white/10 bg-[#09090f] p-3 outline-none"
-            />
-          </div>
+          <label className="text-sm text-gray-400">
+            ชื่อเกม
+            <input name="gameName" value={form.gameName} onChange={updateField} required maxLength={100}
+              className="mt-2 w-full rounded-lg border border-white/10 bg-[#09090f] p-3 text-white" />
+          </label>
+          <label className="text-sm text-gray-400">
+            ชื่อแพ็กเกจ
+            <input name="title" value={form.title} onChange={updateField} required maxLength={150}
+              className="mt-2 w-full rounded-lg border border-white/10 bg-[#09090f] p-3 text-white" />
+          </label>
+          <label className="text-sm text-gray-400">
+            ราคา
+            <input type="number" name="price" value={form.price} onChange={updateField} required min="0" step="0.01"
+              className="mt-2 w-full rounded-lg border border-white/10 bg-[#09090f] p-3 text-white" />
+          </label>
+          <label className="text-sm text-gray-400">
+            จำกัดจำนวนซื้อต่อคน
+            <input type="number" name="maxPerUser" value={form.maxPerUser} onChange={updateField} required min="1"
+              className="mt-2 w-full rounded-lg border border-white/10 bg-[#09090f] p-3 text-white" />
+          </label>
+          <label className="text-sm text-gray-400 md:col-span-2">
+            รายละเอียด
+            <textarea name="description" value={form.description} onChange={updateField} rows="3"
+              className="mt-2 w-full rounded-lg border border-white/10 bg-[#09090f] p-3 text-white" />
+          </label>
+          <label className="flex items-center gap-3 text-sm text-gray-300 md:col-span-2">
+            <input type="checkbox" name="isActive" checked={form.isActive} onChange={updateField} />
+            เปิดขาย
+          </label>
         </div>
-
-        <div className="mt-5 flex flex-wrap gap-3">
-          <button
-            type="submit"
-            className="rounded-lg bg-purple-600 px-6 py-3 font-semibold hover:bg-purple-500"
-          >
-            {editId === null ? 'เพิ่มเกม' : 'บันทึกการแก้ไข'}
+        {error && <p role="alert" className="mt-4 text-sm text-red-400">{error}</p>}
+        <div className="mt-5 flex gap-3">
+          <button type="submit" disabled={saving} className="rounded-lg bg-purple-600 px-6 py-3 font-semibold disabled:opacity-50">
+            {saving ? 'กำลังบันทึก...' : editId === null ? 'เพิ่มแพ็กเกจ' : 'บันทึก'}
           </button>
-
           {editId !== null && (
-            <button
-              type="button"
-              onClick={resetForm}
-              className="rounded-lg border border-white/10 px-6 py-3 text-gray-300 hover:bg-white/5"
-            >
+            <button type="button" onClick={resetForm} className="rounded-lg border border-white/10 px-6 py-3">
               ยกเลิก
             </button>
           )}
         </div>
       </form>
 
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-bold">รายการเกมทั้งหมด</h3>
-        <span className="text-sm text-gray-400">
-          {games.length} เกม
-        </span>
-      </div>
-
-      <div className="overflow-x-auto rounded-2xl border border-white/10">
-        <table className="w-full min-w-[750px] text-left text-sm">
-          <thead className="bg-[#171722] text-gray-400">
-            <tr>
-              <th className="p-4">เกม</th>
-              <th className="p-4">แนวเกม</th>
-              <th className="p-4">ราคาปกติ</th>
-              <th className="p-4">ราคาขาย</th>
-              <th className="p-4">จัดการ</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {games.map((game) => (
-              <tr key={game.id} className="border-t border-white/10">
-                <td className="p-4 font-semibold">{game.title}</td>
-                <td className="p-4 text-gray-400">{game.genre}</td>
-                <td className="p-4">฿{Number(game.price).toLocaleString('th-TH')}</td>
-                <td className="p-4 text-purple-400">
-                  ฿{Number(game.discountPrice).toLocaleString('th-TH')}
-                </td>
-                <td className="p-4">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => editGame(game)}
-                      className="rounded-lg bg-blue-500/10 px-3 py-2 text-blue-400 hover:bg-blue-500/20"
-                    >
-                      แก้ไข
-                    </button>
-                    <button
-                      onClick={() => deleteGame(game.id)}
-                      className="rounded-lg bg-red-500/10 px-3 py-2 text-red-400 hover:bg-red-500/20"
-                    >
-                      ลบ
-                    </button>
-                  </div>
-                </td>
+      {status === 'loading' && <p className="py-8 text-center text-gray-400">กำลังโหลดแพ็กเกจ...</p>}
+      {status === 'error' && (
+        <div className="rounded-xl bg-red-500/10 p-5 text-red-300">
+          <p role="alert">{error}</p>
+          <button onClick={() => setReloadKey((key) => key + 1)} className="mt-3 underline">ลองใหม่</button>
+        </div>
+      )}
+      {status === 'success' && (
+        <div className="overflow-x-auto rounded-2xl border border-white/10">
+          <table className="w-full min-w-[700px] text-left text-sm">
+            <thead className="bg-[#171722] text-gray-400">
+              <tr>
+                <th className="p-4">แพ็กเกจ</th>
+                <th className="p-4">ราคา</th>
+                <th className="p-4">จำกัด/คน</th>
+                <th className="p-4">สถานะ</th>
+                <th className="p-4">จัดการ</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {games.length === 0 && (
-          <p className="p-8 text-center text-gray-500">
-            ยังไม่มีเกมในร้านค้า
-          </p>
-        )}
-      </div>
+            </thead>
+            <tbody>
+              {coupons.map((coupon) => (
+                <tr key={coupon.id} className="border-t border-white/10">
+                  <td className="p-4">
+                    <p className="font-semibold">{coupon.title}</p>
+                    <p className="text-gray-400">{coupon.genre}</p>
+                  </td>
+                  <td className="p-4">฿{coupon.price.toLocaleString('th-TH')}</td>
+                  <td className="p-4">{coupon.maxPerUser}</td>
+                  <td className="p-4">{coupon.isActive ? 'เปิดขาย' : 'ปิดขาย'}</td>
+                  <td className="p-4">
+                    <div className="flex gap-3">
+                      <button onClick={() => editCoupon(coupon)} className="text-blue-400 hover:underline">แก้ไข</button>
+                      <button onClick={() => removeCoupon(coupon)} className="text-red-400 hover:underline">ลบ</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {coupons.length === 0 && (
+                <tr><td colSpan={5} className="p-8 text-center text-gray-400">ยังไม่มีแพ็กเกจ</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

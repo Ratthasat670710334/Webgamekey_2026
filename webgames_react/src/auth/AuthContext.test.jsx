@@ -42,7 +42,7 @@ test('register creates the account then logs in through the API', async () => {
     id: member.id,
     email: member.email,
     username: member.displayName,
-    role: member.role
+    role: 'customer'
   };
   registerRequest.mockResolvedValue(member);
   loginRequest.mockResolvedValue({ token: 'api-token', member: apiMember });
@@ -59,7 +59,11 @@ test('register creates the account then logs in through the API', async () => {
   );
   expect(loginRequest).toHaveBeenCalledWith(member.email, 'password');
   expect(result.current.token).toBe('api-token');
-  expect(result.current.member).toEqual({ ...apiMember, displayName: member.displayName });
+  expect(result.current.member).toEqual({
+    ...apiMember,
+    displayName: member.displayName,
+    role: 'member'
+  });
 });
 
 test('discards the previous local mock session', () => {

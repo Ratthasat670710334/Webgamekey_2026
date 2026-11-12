@@ -26,7 +26,7 @@ function MovieGrid({ movies, status, error, onRetry, onSelectGame }) {
     return (
       <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-8 text-center">
         <p className="font-semibold text-red-400">
-          โหลดข้อมูลเกมไม่สำเร็จ
+          โหลดข้อมูลไม่สำเร็จ
         </p>
 
         <p className="mt-2 text-sm text-gray-400">

@@ -23,18 +23,23 @@ function getStoredSession() {
   }
 
   try {
-    const member = JSON.parse(localStorage.getItem(MEMBER_KEY) || 'null');
+    const storedMember = JSON.parse(localStorage.getItem(MEMBER_KEY) || 'null');
     if (
-      !member ||
-      member.id == null ||
-      typeof member.email !== 'string' ||
-      typeof member.displayName !== 'string' ||
-      typeof member.role !== 'string'
+      !storedMember ||
+      storedMember.id == null ||
+      typeof storedMember.email !== 'string' ||
+      typeof (storedMember.displayName ?? storedMember.username) !== 'string' ||
+      typeof storedMember.role !== 'string'
     ) {
       clearStoredSession();
       return { token: null, member: null };
     }
 
+    const member = {
+      ...storedMember,
+      displayName: storedMember.displayName ?? storedMember.username,
+      role: storedMember.role === 'customer' ? 'member' : storedMember.role
+    };
     return { token, member };
   } catch {
     clearStoredSession();
@@ -45,6 +50,7 @@ function getStoredSession() {
 function getSessionFromResponse(response) {
   const { token, member } = response || {};
   const displayName = member?.displayName ?? member?.username;
+  const role = member?.role === 'customer' ? 'member' : member?.role;
   if (
     typeof token !== 'string' ||
     token.length === 0 ||
@@ -52,12 +58,12 @@ function getSessionFromResponse(response) {
     member.id == null ||
     typeof member.email !== 'string' ||
     typeof displayName !== 'string' ||
-    typeof member.role !== 'string'
+    typeof role !== 'string'
   ) {
     throw new Error('เซิร์ฟเวอร์ส่งข้อมูลเข้าสู่ระบบไม่ครบ');
   }
 
-  return { token, member: { ...member, displayName } };
+  return { token, member: { ...member, displayName, role } };
 }
 
 export function AuthProvider({ children }) {

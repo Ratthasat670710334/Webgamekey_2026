@@ -21,8 +21,11 @@ function renderAt(path) {
 
 // จำลองคนที่ login แล้ว: AuthProvider อ่าน token และ member จาก localStorage ตอนเริ่ม
 function loginAs(member) {
-  localStorage.setItem('moviehub.token', 'mock.1.abc');
-  localStorage.setItem('moviehub.member', JSON.stringify(member));
+  localStorage.setItem('gamekey_token', 'mock.1.abc');
+  localStorage.setItem('gamekey_member', JSON.stringify({
+    email: 'demo@example.com',
+    ...member
+  }));
 }
 
 beforeEach(() => localStorage.clear());

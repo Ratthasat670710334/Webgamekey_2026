@@ -1,97 +1,56 @@
 package store
-/*
+
 import (
 	"context"
-	"errors"
-
-	//"log"
+	"fmt"
 	"time"
 )
 
-var (
-	ErrNoCoupon = errors.New("Order not found")
-)
-
-type OrderUser struct {
-	ID       int64  `json:"id"`
-	Username string `json:"Username"`
+type GameOrder struct {
+	OrderID    string    `json:"orderId"`
+	GameID     int64     `json:"gameId"`
+	Title      string    `json:"title"`
+	Poster     string    `json:"poster"`
+	Platform   string    `json:"platform"`
+	Region     string    `json:"region"`
+	Quantity   int       `json:"quantity"`
+	TotalPrice float64   `json:"totalPrice"`
+	Date       time.Time `json:"date"`
+	Status     string    `json:"status"`
+	Keys       []string  `json:"keys"`
 }
 
-type Orders struct {
-	OrderID       int       `json:"order_id"`
-	UserID        int64     `json:"user_id"`
-	GameName      string    `json:"game_name"`
-	Title         string    `json:"title"`
-	CouponCode    string    `json:"coupon_code"` // รหัสที่ลูกค้าได้
-	PurchasePrice float64   `json:"purchase_price"`
-	PurchasedAt   time.Time `json:"purchased_at"`
-	User          OrderUser `json:"user"`
-}
-
-type OrderbyUser struct {
-	OrderID       int       `json:"order_id"`
-	GameName      string    `json:"game_name"`
-	Title         string    `json:"title"`
-	CouponCode    string    `json:"coupon_code"` // รหัสที่ลูกค้าได้
-	PurchasePrice float64   `json:"purchase_price"`
-	PurchasedAt   time.Time `json:"purchased_at"`
-}
-
-func (s *Store) OrdersByuser(ctx context.Context, userID int64) ([]OrderbyUser, error) {
-	rows, err := s.Pool.Query(ctx,
-		`SELECT o.order_id ,
-    			cp.game_name,
-    			cp.title,
-    			cc.coupon_code,
-    			o.purchase_price ,
-    			o.purchased_at
-				FROM orders o
-				JOIN coupon_codes cc ON cc.code_id =o.code_id 
-				JOIN  coupon_packages cp ON cp.package_id = cc.package_id
-				WHERE o.user_id = $1;`, userID)
+func (s *Store) getGameOrders(ctx context.Context, userID int64) ([]GameOrder, error) {
+	rows, err := s.Pool.Query(ctx, `
+		SELECT o.order_id, o.game_id, g.title, g.poster, g.platform, g.region,
+			o.quantity, o.total_price, o.purchased_at, o.status,
+			COALESCE(array_agg(k.key_code ORDER BY k.key_id) FILTER (WHERE k.key_id IS NOT NULL), ARRAY[]::text[])
+		FROM game_orders o JOIN games g ON g.id=o.game_id
+		LEFT JOIN game_keys k ON k.order_id=o.order_id
+		WHERE ($1=0 OR o.user_id=$1)
+		GROUP BY o.order_id, g.id ORDER BY o.purchased_at DESC`, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	out := []OrderbyUser{}
+	items := []GameOrder{}
 	for rows.Next() {
-		var o OrderbyUser
-		if err := rows.Scan(&o.OrderID, &o.GameName, &o.Title, &o.CouponCode, &o.PurchasePrice, &o.PurchasedAt); err != nil {
+		var item GameOrder
+		var id int64
+		if err := rows.Scan(&id, &item.GameID, &item.Title, &item.Poster, &item.Platform, &item.Region,
+			&item.Quantity, &item.TotalPrice, &item.Date, &item.Status, &item.Keys); err != nil {
 			return nil, err
 		}
-		out = append(out, o)
+		item.OrderID = fmt.Sprintf("GK%d", id)
+		items = append(items, item)
 	}
-	return out, rows.Err()
+	return items, rows.Err()
 }
 
-func (s *Store) GetOrders(ctx context.Context) ([]Orders, error) {
-	rows, err := s.Pool.Query(ctx,
-		`SELECT o.order_id ,
-    			o.user_id ,
-    			o.code_id , 
-    			cp.game_name,
-    			cp.title,
-    			o.purchase_price ,
-    			o.purchased_at,
-    			u.username
-				FROM orders o
-				JOIN users u ON u.user_id = o.user_id 
-				JOIN coupon_codes cc ON cc.code_id =o.code_id 
-				JOIN  coupon_packages cp ON cp.package_id = cc.package_id
-				;`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []Orders{}
-	for rows.Next() {
-		var o Orders
-		if err := rows.Scan(&o.OrderID, &o.UserID, &o.GameName, &o.Title, &o.CouponCode, &o.PurchasePrice, &o.PurchasedAt, &o.User.Username); err != nil {
-			return nil, err
-		}
-		o.User.ID = o.UserID
-		out = append(out, o)
-	}
-	return out, rows.Err()
+func (s *Store) GameOrders(ctx context.Context, userID int64) ([]GameOrder, error) {
+	return s.getGameOrders(ctx, userID)
 }
-*/
+
+func (s *Store) AdminGameOrders(ctx context.Context) ([]GameOrder, error) {
+	return s.getGameOrders(ctx, 0)
+}

@@ -32,14 +32,6 @@ func Role(ctx context.Context) string {
 	return role
 }
 
-func fail(w http.ResponseWriter, status int, code, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]any{
-		"error": map[string]string{"code": code, "message": message},
-	})
-}
-
 func WhoFrom(ctx context.Context) Who {
 	w, _ := ctx.Value(userIDKey).(Who)
 	return w

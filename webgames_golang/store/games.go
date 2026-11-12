@@ -48,20 +48,6 @@ type GameKey struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
-type GameOrder struct {
-	OrderID    string    `json:"orderId"`
-	GameID     int64     `json:"gameId"`
-	Title      string    `json:"title"`
-	Poster     string    `json:"poster"`
-	Platform   string    `json:"platform"`
-	Region     string    `json:"region"`
-	Quantity   int       `json:"quantity"`
-	TotalPrice float64   `json:"totalPrice"`
-	Date       time.Time `json:"date"`
-	Status     string    `json:"status"`
-	Keys       []string  `json:"keys"`
-}
-
 type GameStats struct {
 	GameCount     int64       `json:"gameCount"`
 	MemberCount   int64       `json:"memberCount"`
@@ -325,64 +311,4 @@ func (s *Store) BuyGame(ctx context.Context, userID, gameID int64, quantity int)
 		Quantity: quantity, TotalPrice: total, Date: time.Now().UTC(),
 		Status: "ชำระเงินสำเร็จ", Keys: codes,
 	}, nil
-}
-
-func (s *Store) GameOrders(ctx context.Context, userID int64) ([]GameOrder, error) {
-	return s.getGameOrders(ctx, userID)
-}
-
-func (s *Store) AdminGameOrders(ctx context.Context) ([]GameOrder, error) {
-	return s.getGameOrders(ctx, 0)
-}
-
-func (s *Store) getGameOrders(ctx context.Context, userID int64) ([]GameOrder, error) {
-	rows, err := s.Pool.Query(ctx, `
-		SELECT o.order_id, o.game_id, g.title, g.poster, g.platform, g.region,
-			o.quantity, o.total_price, o.purchased_at, o.status,
-			COALESCE(array_agg(k.key_code ORDER BY k.key_id) FILTER (WHERE k.key_id IS NOT NULL), ARRAY[]::text[])
-		FROM game_orders o JOIN games g ON g.id=o.game_id
-		LEFT JOIN game_keys k ON k.order_id=o.order_id
-		WHERE ($1=0 OR o.user_id=$1)
-		GROUP BY o.order_id, g.id ORDER BY o.purchased_at DESC`, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []GameOrder{}
-	for rows.Next() {
-		var item GameOrder
-		var id int64
-		if err := rows.Scan(&id, &item.GameID, &item.Title, &item.Poster, &item.Platform, &item.Region,
-			&item.Quantity, &item.TotalPrice, &item.Date, &item.Status, &item.Keys); err != nil {
-			return nil, err
-		}
-		item.OrderID = fmt.Sprintf("GK%d", id)
-		items = append(items, item)
-	}
-	return items, rows.Err()
-}
-
-func (s *Store) GameDashboardStats(ctx context.Context) (GameStats, error) {
-	var stats GameStats
-	err := s.Pool.QueryRow(ctx, `
-		SELECT (SELECT count(*) FROM games),
-			(SELECT count(*) FROM users),
-			(SELECT count(*) FROM game_orders),
-			COALESCE((SELECT sum(total_price) FROM game_orders), 0),
-			(SELECT count(*) FROM game_keys WHERE order_id IS NULL),
-			(SELECT count(*) FROM game_orders WHERE status <> 'ชำระเงินสำเร็จ')`).Scan(
-		&stats.GameCount, &stats.MemberCount, &stats.OrderCount, &stats.Sales,
-		&stats.AvailableKeys, &stats.PendingOrders)
-	if err != nil {
-		return stats, err
-	}
-	orders, err := s.getGameOrders(ctx, 0)
-	if err != nil {
-		return stats, err
-	}
-	if len(orders) > 5 {
-		orders = orders[:5]
-	}
-	stats.RecentOrders = orders
-	return stats, nil
 }

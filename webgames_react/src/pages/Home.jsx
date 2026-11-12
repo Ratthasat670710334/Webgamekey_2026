@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FeaturedCarousel from '../components/FeaturedCarousel';
-import MovieGrid from '../components/MovieGrid';
+import GameGrid from '../components/GameGrid';
 import { getGames } from '../api/backend';
 
 const categories = [
@@ -205,7 +205,7 @@ function Home() {
         {status === 'success' ? (
           <FeaturedCarousel movies={featuredGames} onSelectGame={openGameDetail} />
         ) : (
-          <MovieGrid movies={[]} status={status} error={error} onRetry={() => setReloadKey((key) => key + 1)} />
+          <GameGrid movies={[]} status={status} error={error} onRetry={() => setReloadKey((key) => key + 1)} />
         )}
       </section>
 
@@ -246,7 +246,7 @@ function Home() {
           ))}
         </div>
 
-        <MovieGrid
+        <GameGrid
           movies={filteredGames}
           status={status}
           error={error}

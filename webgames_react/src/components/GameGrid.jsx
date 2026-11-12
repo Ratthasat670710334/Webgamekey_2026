@@ -1,7 +1,7 @@
 
-import MovieCard from './MovieCard';
+import MovieCard from './GameCard';
 
-function MovieGrid({ movies, status, error, onRetry, onSelectGame }) {
+function GameGrid({ movies, status, error, onRetry, onSelectGame }) {
   if (status === 'loading') {
     return (
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
@@ -66,4 +66,4 @@ function MovieGrid({ movies, status, error, onRetry, onSelectGame }) {
   );
 }
 
-export default MovieGrid;
+export default GameGrid;

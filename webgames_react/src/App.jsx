@@ -20,6 +20,8 @@ import Payment from './pages/Payment';
 import NotFound from './pages/NotFound';
 import About from './pages/About';
 
+import Footer from './components/Footer';
+
 function App() {
   return (
     <div className="min-h-screen bg-[#09090f] text-white">
@@ -72,6 +74,7 @@ function App() {
 
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <Footer />
       </main>
     </div>
   );

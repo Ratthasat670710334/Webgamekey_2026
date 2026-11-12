@@ -1,7 +1,7 @@
 
 import { useNavigate } from 'react-router-dom';
 
-function MovieCard({ movie, onSelectGame }) {
+function GameCard({ movie, onSelectGame }) {
   const game = movie;
   const navigate = useNavigate();
 
@@ -68,4 +68,4 @@ function MovieCard({ movie, onSelectGame }) {
   );
 }
 
-export default MovieCard;
+export default GameCard;

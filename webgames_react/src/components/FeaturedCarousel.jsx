@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import MovieCard from './MovieCard';
+import GameCard from './GameCard';
 
 const PER_PAGE = 4;
 
@@ -29,7 +29,7 @@ function FeaturedCarousel({ movies = [], onSelectGame }) {
     <div>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {shown.map(game => (
-          <MovieCard
+          <GameCard
             key={game.id}
             movie={game}
             onSelectGame={onSelectGame}

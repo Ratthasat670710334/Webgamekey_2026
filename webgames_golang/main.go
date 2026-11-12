@@ -61,7 +61,16 @@ func main() {
 	mux.HandleFunc("PUT /api/admin/coupons/{id}", admin(h.AdminUpdateCoupon))
 	mux.HandleFunc("DELETE /api/admin/coupons/{id}", admin(h.AdminDeleteCoupon))
 
+	//origins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+
 	origins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
-	log.Println("เว็บขายคูปอง คีย์เกม API ฟังอยู่ที่ :8080 ต้อนรับ", origins)
-	log.Fatal(http.ListenAndServe(":8080", mw.Logging(mw.CORS(origins, mux))))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	//log.Println("MovieHub API ฟังอยู่ที่ :8080 ต้อนรับ", origins)
+	log.Println("MovieHub API ฟังอยู่ที่ :"+port, "ต้อนรับ", origins)
+	//log.Fatal(http.ListenAndServe(":8080", mw.Logging(mw.CORS(origins, mux))))
+	log.Fatal(http.ListenAndServe(":"+port, mw.Logging(mw.CORS(origins, mux))))
 }

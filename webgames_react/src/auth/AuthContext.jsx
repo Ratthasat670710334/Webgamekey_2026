@@ -49,21 +49,33 @@ function getStoredSession() {
 
 function getSessionFromResponse(response) {
   const { token, member } = response || {};
+<<<<<<< HEAD
   const displayName = member?.displayName ?? member?.username;
   const role = member?.role === 'customer' ? 'member' : member?.role;
+=======
+>>>>>>> parent of 81e1cee (edit)
   if (
     typeof token !== 'string' ||
     token.length === 0 ||
     !member ||
     member.id == null ||
     typeof member.email !== 'string' ||
+<<<<<<< HEAD
     typeof displayName !== 'string' ||
     typeof role !== 'string'
+=======
+    typeof member.displayName !== 'string' ||
+    typeof member.role !== 'string'
+>>>>>>> parent of 81e1cee (edit)
   ) {
     throw new Error('เซิร์ฟเวอร์ส่งข้อมูลเข้าสู่ระบบไม่ครบ');
   }
 
+<<<<<<< HEAD
   return { token, member: { ...member, displayName, role } };
+=======
+  return { token, member };
+>>>>>>> parent of 81e1cee (edit)
 }
 
 export function AuthProvider({ children }) {

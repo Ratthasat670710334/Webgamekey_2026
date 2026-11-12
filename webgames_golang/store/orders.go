@@ -14,7 +14,7 @@ var (
 
 type OrderUser struct {
 	ID       int64  `json:"id"`
-	Username string `json:"Username"`
+	Username string `json:"username"`
 }
 
 type Orders struct {
@@ -68,9 +68,9 @@ func (s *Store) GetOrders(ctx context.Context) ([]Orders, error) {
 	rows, err := s.Pool.Query(ctx,
 		`SELECT o.order_id ,
     			o.user_id ,
-    			o.code_id , 
     			cp.game_name,
     			cp.title,
+                cc.coupon_code,
     			o.purchase_price ,
     			o.purchased_at,
     			u.username
@@ -78,7 +78,7 @@ func (s *Store) GetOrders(ctx context.Context) ([]Orders, error) {
 				JOIN users u ON u.user_id = o.user_id 
 				JOIN coupon_codes cc ON cc.code_id =o.code_id 
 				JOIN  coupon_packages cp ON cp.package_id = cc.package_id
-				;`)
+				ORDER BY o.purchased_at DESC, o.order_id DESC`)
 	if err != nil {
 		return nil, err
 	}

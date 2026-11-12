@@ -85,12 +85,19 @@ func validateCoupon(in *store.CouponInput) (code, message string) {
 	}
 
 	switch {
-	case in.Title == nil || *in.Title == "" || utf8.RuneCountInString(*in.GameName) > 255:
-		return "BAD_TITLE", "ต้องมีชื่อเกม และยาวไม่เกิน 255 ตัวอักษร"
-	case in.Title == nil || *in.Title == "" || utf8.RuneCountInString(*in.Title) > 255:
-		return "BAD_TITLE", "ต้องมีชื่อเรื่อง และยาวไม่เกิน 255 ตัวอักษร"
+	case in.GameName == nil || *in.GameName == "" || utf8.RuneCountInString(*in.GameName) > 100:
+		return "BAD_GAME_NAME", "ต้องมีชื่อเกม และยาวไม่เกิน 100 ตัวอักษร"
+	case in.Title == nil || *in.Title == "" || utf8.RuneCountInString(*in.Title) > 150:
+		return "BAD_TITLE", "ต้องมีชื่อแพ็กเกจ และยาวไม่เกิน 150 ตัวอักษร"
+	case in.Price == nil || *in.Price < 0:
+		return "BAD_PRICE", "ราคาต้องเป็น 0 ขึ้นไป"
+	case in.MaxPerUser == nil || *in.MaxPerUser < 1:
+		return "BAD_LIMIT", "จำนวนซื้อสูงสุดต่อคนต้องเป็นอย่างน้อย 1"
 	}
-	if *in.Description == "" {
+	if in.Description == nil {
+		description := "---"
+		in.Description = &description
+	} else if *in.Description == "" {
 		*in.Description = "---"
 	}
 	return "", ""

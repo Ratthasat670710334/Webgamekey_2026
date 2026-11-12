@@ -30,8 +30,8 @@ type Stats struct {
 	Coupons       int64       `json:"coupons"`
 	Users         int64       `json:"users"`
 	Admins        int64       `json:"admins"`
-	Orders        int64       `json:"Orders"`
-	Totals        int64       `json:"Totals"`
+	Orders        int64       `json:"orders"`
+	Totals        float64     `json:"totals"`
 	NewestUsers   []User      `json:"newestUsers"`
 	TopCouponsell []TopCoupon `json:"topCoupon"`
 }
@@ -52,7 +52,7 @@ func (s *Store) Stats(ctx context.Context) (Stats, error) {
                 (SELECT count(*) FROM users),
                 (SELECT count(*) FROM users WHERE role = 'admin'),
                 (SELECT count(*) FROM orders),
-                (SELECT sum(price) FROM orders_price )
+                (SELECT COALESCE(sum(price), 0) FROM orders_price )
 				
 				`).
 		Scan(&st.Coupons, &st.Users, &st.Admins, &st.Orders, &st.Totals)
@@ -61,7 +61,7 @@ func (s *Store) Stats(ctx context.Context) (Stats, error) {
 	}
 
 	rows, err := s.Pool.Query(ctx,
-		`SELECT user_id, email, username, role,created_at
+		`SELECT user_id, username, email, role, created_at
          FROM users ORDER BY created_at DESC, user_id DESC LIMIT 5`)
 	if err != nil {
 		return st, err
@@ -81,19 +81,13 @@ func (s *Store) Stats(ctx context.Context) (Stats, error) {
 	}
 
 	rows, err = s.Pool.Query(ctx,
-		`
-		WITH orders_price AS (
-		SELECT cp.package_id, cp.title ,cp.price FROM orders o
-        JOIN coupon_codes cc ON cc.code_id = o.code_id
-		JOIN coupon_packages cp ON cc.package_id = cp.package_id
-		)
-				
-		
-        SELECT package_id ,title ,SUM(price),AVG(price) FROM orders_price 
-        GROUP BY package_id ,title ,price
-        ORDER BY price DESC
-        LIMIT 5
-        `)
+		`SELECT cp.package_id, cp.title, COUNT(*), AVG(o.purchase_price)
+	 FROM orders o
+	 JOIN coupon_codes cc ON cc.code_id = o.code_id
+	 JOIN coupon_packages cp ON cc.package_id = cp.package_id
+	 GROUP BY cp.package_id, cp.title
+	 ORDER BY COUNT(*) DESC, cp.title
+	 LIMIT 5`)
 	if err != nil {
 		return st, err
 	}
@@ -135,13 +129,15 @@ type AdminCoupon struct {
 func (s *Store) AdminGetCoupon(ctx context.Context, id int64) (AdminCoupon, error) {
 	var c AdminCoupon
 	err := s.Pool.QueryRow(ctx,
-		`SELECT game_name, title, description ,price, max_per_user
+		`SELECT game_name, title, description, price, max_per_user, is_active
 		FROM coupon_packages
 			WHERE package_id =$1`, id).
-		Scan(&c.GameName, &c.Title, &c.Description, &c.Price, &c.MaxPerUser)
+		Scan(&c.GameName, &c.Title, &c.Description, &c.Price, &c.MaxPerUser, &c.IsActive)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return c, ErrNotFound
 	}
+	c.ID = id
+	c.PackageID = int(id)
 	return c, err
 }
 
@@ -156,22 +152,30 @@ func (s *Store) CreateCoupon(ctx context.Context, id int64, in CouponInput) (Adm
 	if packageID == 0 && in.PackageID > 0 {
 		packageID = int64(in.PackageID)
 	}
+	if in.MaxPerUser == nil {
+		defaultLimit := 1
+		in.MaxPerUser = &defaultLimit
+	}
+	if in.IsActive == nil {
+		active := true
+		in.IsActive = &active
+	}
 
 	var createdID int64
 	if packageID > 0 {
 		err = tx.QueryRow(ctx,
-			`INSERT INTO coupon_packages (package_id, game_name, title, description, price, max_per_user)
-			 VALUES ($1, $2, $3, $4, $5, $6)
+			`INSERT INTO coupon_packages (package_id, game_name, title, description, price, max_per_user, is_active)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7)
 			 RETURNING package_id`,
 			packageID, in.GameName, in.Title, in.Description, in.Price,
-			in.MaxPerUser).Scan(&createdID)
+			in.MaxPerUser, in.IsActive).Scan(&createdID)
 	} else {
 		err = tx.QueryRow(ctx,
-			`INSERT INTO coupon_packages (game_name, title, description, price, max_per_user)
-			 VALUES ($1, $2, $3, $4, $5)
+			`INSERT INTO coupon_packages (game_name, title, description, price, max_per_user, is_active)
+			 VALUES ($1, $2, $3, $4, $5, $6)
 			 RETURNING package_id`,
 			in.GameName, in.Title, in.Description, in.Price,
-			in.MaxPerUser).Scan(&createdID)
+			in.MaxPerUser, in.IsActive).Scan(&createdID)
 	}
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -196,11 +200,11 @@ func (s *Store) UpdateCoupon(ctx context.Context, id int64, in CouponInput) (Adm
 
 	tag, err := tx.Exec(ctx,
 		`UPDATE coupon_packages
-         SET game_name = $2, title = $3, description = $4, price = $5 ,
-		 max_per_user = $6
+         SET game_name = $2, title = $3, description = $4, price = $5,
+		 max_per_user = $6, is_active = COALESCE($7, is_active)
          WHERE package_id = $1`,
 		id, in.GameName, in.Title, in.Description, in.Price,
-		in.MaxPerUser)
+		in.MaxPerUser, in.IsActive)
 	if err != nil {
 		return AdminCoupon{}, err
 	}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import {
   apiFetch,
   buyCoupon,
@@ -9,6 +10,9 @@ import {
   register,
   setMemberRole
 } from './backend';
+=======
+import { apiFetch, login, postReview } from './backend';
+>>>>>>> parent of 81e1cee (edit)
 
 // ตัวช่วยสร้าง "คำตอบปลอม" ของ fetch: ใส่แค่ status กับ body ที่อยากให้ server ตอบ
 function fakeResponse(status, body) {
@@ -37,6 +41,7 @@ test('GET ธรรมดา: ไม่มี body ไม่มี Authorization
   expect(options.headers.Authorization).toBeUndefined();
 });
 
+<<<<<<< HEAD
 test('register ส่งชื่อในฟิลด์ username ที่ API Go ต้องการ', async () => {
   fetch.mockResolvedValue(fakeResponse(201, { id: 7 }));
 
@@ -62,6 +67,10 @@ test('โหลดแพ็กเกจจาก API และแปลงข้
       available_count: 3
     }]
   }));
+=======
+test('มี token ต้องแนบ Authorization แบบ Bearer และ body ต้องเป็นข้อความ JSON', async () => {
+  fetch.mockResolvedValue(fakeResponse(201, { id: 7 }));
+>>>>>>> parent of 81e1cee (edit)
 
   await expect(getCoupons()).resolves.toEqual([expect.objectContaining({
     id: 12,

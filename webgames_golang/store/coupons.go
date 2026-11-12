@@ -12,27 +12,34 @@ import (
 var ErrCouponLimitFull = errors.New("coupon purchase limit reached")
 
 type CouponTitle struct {
-	PackageID int     `json:"package_id"`
-	Title     string  `json:"title"`
-	Price     float64 `json:"price"`
+	PackageID      int     `json:"package_id"`
+	GameName       string  `json:"game_name"`
+	Title          string  `json:"title"`
+	Price          float64 `json:"price"`
+	AvailableCount int     `json:"available_count"`
 }
 
 type CouponPackage struct {
-	PackageID   int     `json:"package_id"`
-	GameName    *string `json:"game_name"`
-	Title       *string `json:"title"`
-	Description *string `json:"description"`
-	Price       float64 `json:"price"`
-	MaxPerUser  int     `json:"max_per_user"`
-	IsActive    bool    `json:"is_active"`
+	PackageID      int     `json:"package_id"`
+	GameName       *string `json:"game_name"`
+	Title          *string `json:"title"`
+	Description    *string `json:"description"`
+	Price          float64 `json:"price"`
+	MaxPerUser     int     `json:"max_per_user"`
+	IsActive       bool    `json:"is_active"`
+	AvailableCount int     `json:"available_count"`
 }
 
 func (s *Store) GetCoupon(ctx context.Context) ([]CouponTitle, error) {
 	rows, err := s.Pool.Query(ctx,
-
 		`
-		SELECT package_id, title ,price
-		FROM coupon_packages
+		SELECT cp.package_id, cp.game_name, cp.title, cp.price,
+			COUNT(cc.code_id) FILTER (WHERE cc.status = 'available')
+		FROM coupon_packages cp
+		LEFT JOIN coupon_codes cc ON cc.package_id = cp.package_id
+		WHERE cp.is_active = TRUE
+		GROUP BY cp.package_id, cp.game_name, cp.title, cp.price
+		ORDER BY cp.package_id
 		`)
 	if err != nil {
 		return nil, err
@@ -42,7 +49,7 @@ func (s *Store) GetCoupon(ctx context.Context) ([]CouponTitle, error) {
 
 	for rows.Next() {
 		var c CouponTitle
-		if err := rows.Scan(&c.PackageID, &c.Title, &c.Price); err != nil {
+		if err := rows.Scan(&c.PackageID, &c.GameName, &c.Title, &c.Price, &c.AvailableCount); err != nil {
 			return nil, err
 		}
 		out = append(out, c)
@@ -53,11 +60,17 @@ func (s *Store) GetCoupon(ctx context.Context) ([]CouponTitle, error) {
 // SearchCoupon
 func (s *Store) SearchCoupons(ctx context.Context, q string) ([]CouponTitle, error) {
 	rows, err := s.Pool.Query(ctx,
-		`SELECT package_id, title ,price
-		FROM coupon_packages
-        WHERE lower(title) LIKE '%' || lower($1) || '%'
-		OR lower(game_name) LIKE '%' || lower($1) || '%'
-        ORDER BY package_id`, q)
+		`SELECT cp.package_id, cp.game_name, cp.title, cp.price,
+			COUNT(cc.code_id) FILTER (WHERE cc.status = 'available')
+		FROM coupon_packages cp
+		LEFT JOIN coupon_codes cc ON cc.package_id = cp.package_id
+        WHERE cp.is_active = TRUE AND (
+			lower(cp.title) LIKE '%' || lower($1) || '%'
+			OR lower(cp.game_name) LIKE '%' || lower($1) || '%'
+		)
+		GROUP BY cp.package_id, cp.game_name, cp.title, cp.price
+        ORDER BY cp.package_id
+		`, q)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +79,7 @@ func (s *Store) SearchCoupons(ctx context.Context, q string) ([]CouponTitle, err
 	out := []CouponTitle{}
 	for rows.Next() {
 		var c CouponTitle
-		if err := rows.Scan(&c.PackageID, &c.Title, &c.Price); err != nil {
+		if err := rows.Scan(&c.PackageID, &c.GameName, &c.Title, &c.Price, &c.AvailableCount); err != nil {
 			return nil, err
 		}
 
@@ -80,14 +93,39 @@ func (s *Store) SearchCoupons(ctx context.Context, q string) ([]CouponTitle, err
 func (s *Store) GetCouponDetail(ctx context.Context, id int64) (CouponPackage, error) {
 	var c CouponPackage
 	err := s.Pool.QueryRow(ctx,
-		`SELECT package_id ,game_name, title, description ,price, max_per_user
-		FROM coupon_packages
-			WHERE package_id =$1`, id).
-		Scan(&c.PackageID, &c.GameName, &c.Title, &c.Description, &c.Price, &c.MaxPerUser)
+		`SELECT cp.package_id, cp.game_name, cp.title, cp.description, cp.price,
+			cp.max_per_user, cp.is_active,
+			COUNT(cc.code_id) FILTER (WHERE cc.status = 'available')
+		FROM coupon_packages cp
+		LEFT JOIN coupon_codes cc ON cc.package_id = cp.package_id
+		WHERE cp.package_id = $1 AND cp.is_active = TRUE
+		GROUP BY cp.package_id`, id).
+		Scan(&c.PackageID, &c.GameName, &c.Title, &c.Description, &c.Price,
+			&c.MaxPerUser, &c.IsActive, &c.AvailableCount)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return c, ErrNotFound
 	}
 	return c, err
+}
+
+func (s *Store) AdminCoupons(ctx context.Context) ([]CouponPackage, error) {
+	rows, err := s.Pool.Query(ctx,
+		`SELECT package_id, game_name, title, description, price, max_per_user, is_active
+		 FROM coupon_packages ORDER BY package_id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []CouponPackage{}
+	for rows.Next() {
+		var c CouponPackage
+		if err := rows.Scan(&c.PackageID, &c.GameName, &c.Title, &c.Description,
+			&c.Price, &c.MaxPerUser, &c.IsActive); err != nil {
+			return nil, err
+		}
+		out = append(out, c)
+	}
+	return out, rows.Err()
 }
 
 func (s *Store) BuyCoupon(ctx context.Context, userID int64, packageID int64) (string, error) {

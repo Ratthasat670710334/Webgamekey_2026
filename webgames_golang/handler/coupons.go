@@ -17,6 +17,15 @@ func (h *Handler) GetCoupon(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
+func (h *Handler) AdminCoupons(w http.ResponseWriter, r *http.Request) {
+	items, err := h.Store.AdminCoupons(r.Context())
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
 func (h *Handler) SearchCoupons(w http.ResponseWriter, r *http.Request) {
 	items, err := h.Store.SearchCoupons(r.Context(), r.URL.Query().Get("q"))
 	if err != nil {

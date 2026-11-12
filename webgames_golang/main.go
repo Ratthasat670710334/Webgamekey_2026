@@ -56,6 +56,7 @@ func main() {
 	mux.HandleFunc("GET /api/admin/users", admin(h.AdminUser))
 	mux.HandleFunc("PUT /api/admin/users/{id}/role", admin(h.AdminSetRole))
 	mux.HandleFunc("GET /api/admin/orders", admin(h.GetOrders))
+	mux.HandleFunc("GET /api/admin/coupons", admin(h.AdminCoupons))
 	mux.HandleFunc("GET /api/admin/coupons/{id}", admin(h.AdminGetCoupon))
 	mux.HandleFunc("POST /api/admin/coupons", admin(h.AdminCreateCoupon))
 	mux.HandleFunc("PUT /api/admin/coupons/{id}", admin(h.AdminUpdateCoupon))

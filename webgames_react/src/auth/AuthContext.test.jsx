@@ -1,10 +1,15 @@
 import { act, renderHook } from '@testing-library/react';
 import { AuthProvider, useAuth } from './AuthContext';
-import { login as loginRequest, register as registerRequest } from '../api/backend';
+import {
+  login as loginRequest,
+  register as registerRequest,
+  updateProfile as updateProfileRequest
+} from '../api/backend';
 
 jest.mock('../api/backend', () => ({
   login: jest.fn(),
-  register: jest.fn()
+  register: jest.fn(),
+  updateProfile: jest.fn()
 }));
 
 const member = {
@@ -53,6 +58,27 @@ test('register creates the account then logs in through the API', async () => {
   );
   expect(loginRequest).toHaveBeenCalledWith(member.email, 'password');
   expect(result.current.token).toBe('api-token');
+});
+
+test('updateProfile saves the API response to context and local storage', async () => {
+  localStorage.setItem('gamekey_token', 'api-token');
+  localStorage.setItem('gamekey_member', JSON.stringify(member));
+  const updatedMember = { ...member, displayName: 'Updated', email: 'updated@example.com' };
+  updateProfileRequest.mockResolvedValue(updatedMember);
+  const { result } = renderHook(() => useAuth(), { wrapper });
+
+  await act(async () => {
+    await result.current.updateProfile('Updated', 'updated@example.com', 'Old!Pass123', 'New!Pass123');
+  });
+
+  expect(updateProfileRequest).toHaveBeenCalledWith({
+    displayName: 'Updated',
+    email: 'updated@example.com',
+    currentPassword: 'Old!Pass123',
+    newPassword: 'New!Pass123'
+  }, 'api-token');
+  expect(result.current.member).toEqual(updatedMember);
+  expect(JSON.parse(localStorage.getItem('gamekey_member'))).toEqual(updatedMember);
 });
 
 test('discards the previous local mock session', () => {

@@ -9,7 +9,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-var ErrEmailTaken = errors.New("email taken")
+var (
+	ErrEmailTaken   = errors.New("email taken")
+	ErrProfileTaken = errors.New("profile value already taken")
+)
 
 type User struct {
 	ID           int64      `json:"id"`
@@ -67,6 +70,25 @@ func (s *Store) UpdateUserPassword(ctx context.Context, id int64, hash string) e
 		return ErrNotFound
 	}
 	return nil
+}
+
+func (s *Store) UpdateUserProfile(ctx context.Context, id int64, username, email, passwordHash string) (User, error) {
+	var u User
+	err := s.Pool.QueryRow(ctx, `
+		UPDATE users
+		SET username = $2, email = $3,
+			password_hash = CASE WHEN $4 = '' THEN password_hash ELSE $4 END
+		WHERE user_id = $1
+		RETURNING user_id, email, username, role`, id, username, email, passwordHash).
+		Scan(&u.ID, &u.Email, &u.Username, &u.Role)
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		return User{}, ErrProfileTaken
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return User{}, ErrNotFound
+	}
+	return u, err
 }
 
 func (s *Store) ListUsers(ctx context.Context) ([]User, error) {

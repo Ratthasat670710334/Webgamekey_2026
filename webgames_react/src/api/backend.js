@@ -47,6 +47,9 @@ export function login(email, password) {
 export function getMe(token) {
   return apiFetch('/api/users/me', { token });
 }
+export function updateProfile(fields, token) {
+  return apiFetch('/api/users/me', { method: 'PUT', body: fields, token });
+}
 
 
 // ---------- หลังบ้าน (ทุกตัวต้องแนบ token ของ admin ถ้าเป็น member Go ตอบ 403) ----------

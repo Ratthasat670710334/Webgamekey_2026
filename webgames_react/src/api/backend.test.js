@@ -1,4 +1,4 @@
-import { apiFetch, buyGame, getGames, getMe, login, postReview } from './backend';
+import { apiFetch, buyGame, getGames, getMe, login, postReview, updateProfile } from './backend';
 
 // ตัวช่วยสร้าง "คำตอบปลอม" ของ fetch: ใส่แค่ status กับ body ที่อยากให้ server ตอบ
 function fakeResponse(status, body) {
@@ -91,9 +91,27 @@ test('โปรไฟล์และคำสั่งซื้อใช้ rout
   await getMe('token');
   expect(fetch.mock.calls[0][0]).toBe('/api/users/me');
 
+  fetch.mockResolvedValue(fakeResponse(200, { id: 1, email: 'new@example.com', displayName: 'New Name', role: 'member' }));
+  await updateProfile({
+    displayName: 'New Name',
+    email: 'new@example.com',
+    currentPassword: 'Old!Pass123',
+    newPassword: 'New!Pass123'
+  }, 'token');
+  const [profileUrl, profileOptions] = fetch.mock.calls[1];
+  expect(profileUrl).toBe('/api/users/me');
+  expect(profileOptions.method).toBe('PUT');
+  expect(profileOptions.headers.Authorization).toBe('Bearer token');
+  expect(profileOptions.body).toBe(JSON.stringify({
+    displayName: 'New Name',
+    email: 'new@example.com',
+    currentPassword: 'Old!Pass123',
+    newPassword: 'New!Pass123'
+  }));
+
   fetch.mockResolvedValue(fakeResponse(201, { orderId: 'GK1' }));
   await buyGame(7, 2, 'token');
-  const [url, options] = fetch.mock.calls[1];
+  const [url, options] = fetch.mock.calls[2];
   expect(url).toBe('/api/game-orders');
   expect(options.method).toBe('POST');
   expect(options.headers.Authorization).toBe('Bearer token');

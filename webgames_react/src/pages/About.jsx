@@ -7,13 +7,14 @@ function About() {
 
   const [displayName, setDisplayName] = useState(member?.displayName || '');
   const [email, setEmail] = useState(member?.email || '');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     setMessage('');
@@ -24,18 +25,27 @@ function About() {
       return;
     }
 
+    if (newPassword && !currentPassword) {
+      setError('กรุณากรอกรหัสผ่านปัจจุบันเพื่อยืนยันการเปลี่ยนรหัสผ่าน');
+      return;
+    }
+
     if (!displayName.trim() || !email.trim()) {
       setError('กรุณากรอกชื่อและอีเมลให้ครบ');
       return;
     }
 
     try {
-      updateProfile(
+      await updateProfile(
         displayName.trim(),
         email.trim(),
+        currentPassword,
         newPassword
       );
 
+      setDisplayName(displayName.trim());
+      setEmail(email.trim());
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setMessage('บันทึกข้อมูลเรียบร้อยแล้ว');
@@ -47,6 +57,7 @@ function About() {
   function handleCancel() {
     setDisplayName(member?.displayName || '');
     setEmail(member?.email || '');
+    setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
     setMessage('');
@@ -131,10 +142,25 @@ function About() {
                 </h3>
 
                 <p className="mb-4 text-xs text-gray-500">
-                  หากไม่ต้องการเปลี่ยนรหัสผ่าน ให้เว้นว่างไว้
+                  หากไม่ต้องการเปลี่ยนรหัสผ่าน ให้เว้นช่องรหัสผ่านทั้งหมดไว้
                 </p>
 
                 <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold">
+                      รหัสผ่านปัจจุบัน
+                    </label>
+
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      placeholder="กรอกรหัสผ่านปัจจุบัน"
+                      autoComplete="current-password"
+                      className="w-full rounded-xl border border-white/10 bg-[#09090f] px-4 py-3 text-white outline-none transition focus:border-purple-500"
+                    />
+                  </div>
+
                   <div>
                     <label className="mb-2 block text-sm font-semibold">
                       รหัสผ่านใหม่
@@ -145,6 +171,7 @@ function About() {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="กรอกรหัสผ่านใหม่"
+                      autoComplete="new-password"
                       className="w-full rounded-xl border border-white/10 bg-[#09090f] px-4 py-3 text-white outline-none transition focus:border-purple-500"
                     />
                   </div>
@@ -159,6 +186,7 @@ function About() {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+                      autoComplete="new-password"
                       className="w-full rounded-xl border border-white/10 bg-[#09090f] px-4 py-3 text-white outline-none transition focus:border-purple-500"
                     />
                   </div>

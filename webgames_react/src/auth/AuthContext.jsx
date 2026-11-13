@@ -1,7 +1,8 @@
 import { createContext, useContext, useState } from 'react';
 import {
   login as loginRequest,
-  register as registerRequest
+  register as registerRequest,
+  updateProfile as updateProfileRequest
 } from '../api/backend';
 
 const AuthContext = createContext(null);
@@ -83,12 +84,33 @@ export function AuthProvider({ children }) {
     remember(response);
   }
 
-  function updateProfile() {
-    if (!member) {
+  async function updateProfile(displayName, email, currentPassword = '', newPassword = '') {
+    if (!member || !token) {
       throw new Error('กรุณาเข้าสู่ระบบก่อน');
     }
 
-    throw new Error('Backend ยังไม่มี API สำหรับแก้ไขโปรไฟล์');
+    const fields = { displayName, email };
+    if (newPassword) {
+      fields.currentPassword = currentPassword;
+      fields.newPassword = newPassword;
+    }
+
+    const updatedMember = await updateProfileRequest(fields, token);
+    if (
+      !updatedMember ||
+      updatedMember.id == null ||
+      typeof updatedMember.email !== 'string' ||
+      typeof updatedMember.displayName !== 'string' ||
+      typeof updatedMember.role !== 'string'
+    ) {
+      throw new Error('เซิร์ฟเวอร์ส่งข้อมูลโปรไฟล์ไม่ครบ');
+    }
+
+    const nextSession = { token, member: updatedMember };
+    setSession(nextSession);
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(MEMBER_KEY, JSON.stringify(updatedMember));
+    return updatedMember;
   }
 
   function loginAsGuest() {

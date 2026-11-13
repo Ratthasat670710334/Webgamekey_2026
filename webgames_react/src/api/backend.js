@@ -47,44 +47,6 @@ export function getMe(token) {
   return apiFetch('/api/users/me', { token });
 }
 
-// ---------- รีวิว ----------
-export function getReviews(movieId) {
-  return apiFetch(`/api/movies/${movieId}/reviews`);                                   // ได้ { items }
-}
-export function postReview(movieId, text, token) {
-  return apiFetch(`/api/movies/${movieId}/reviews`, { method: 'POST', body: { text }, token });
-}
-
-// ---------- คะแนน ----------
-export function putVote(movieId, score, token) {
-  return apiFetch(`/api/movies/${movieId}/vote`, { method: 'PUT', body: { score }, token });
-}
-
-// ---------- Wishlist ----------
-export function getWishlist(token) {
-  return apiFetch('/api/me/wishlist', { token });                                       // ได้ { items }
-}
-export function addToWishlist(movieId, token) {
-  return apiFetch(`/api/me/wishlist/${movieId}`, { method: 'PUT', token });
-}
-export function removeFromWishlist(movieId, token) {
-  return apiFetch(`/api/me/wishlist/${movieId}`, { method: 'DELETE', token });
-}
-
-// ---------- หนัง (สัปดาห์หน้า: เปลี่ยนหน้า Movies จาก tmdb.js มาใช้ตัวนี้) ----------
-export async function getMovies() {
-  const data = await apiFetch('/api/movies');
-  return data.items;
-}
-
-export async function getMovie(movieId) {
-  return apiFetch(`/api/movies/${movieId}`);
-}
-// ---------- แนวหนัง (สาธารณะ ใช้ทำ dropdown ในฟอร์มหลังบ้าน) ----------
-export async function getGenres() {
-  const data = await apiFetch('/api/genres');
-  return data.items;                                      // [{ id, nameEn, nameTh }]
-}
 
 // ---------- หลังบ้าน (ทุกตัวต้องแนบ token ของ admin ถ้าเป็น member Go ตอบ 403) ----------
 export function getAdminStats(token) {
@@ -144,16 +106,3 @@ export async function getAdminGameOrders(token) {
   const data = await apiFetch('/api/admin/game-orders', { token });
   return data.items;
 }
-export function getAdminMovie(movieId, token) {
-  return apiFetch(`/api/admin/movies/${movieId}`, { token });
-}
-export function createMovie(fields, token) {
-  return apiFetch('/api/admin/movies', { method: 'POST', body: fields, token });
-}
-export function updateMovie(movieId, fields, token) {
-  return apiFetch(`/api/admin/movies/${movieId}`, { method: 'PUT', body: fields, token });
-}
-export function deleteMovie(movieId, token) {
-  return apiFetch(`/api/admin/movies/${movieId}`, { method: 'DELETE', token });       // 204 ได้ null
-}
-

@@ -49,12 +49,24 @@ func (s *Store) UserByEmail(ctx context.Context, email string) (User, error) {
 func (s *Store) UserByID(ctx context.Context, id int64) (User, error) {
 	var u User
 	err := s.Pool.QueryRow(ctx,
-		`SELECT user_id, email, username, role FROM users WHERE user_id = $1`, id).
-		Scan(&u.ID, &u.Email, &u.Username, &u.Role)
+		`SELECT user_id, email, username, role, password_hash FROM users WHERE user_id = $1`, id).
+		Scan(&u.ID, &u.Email, &u.Username, &u.Role, &u.PasswordHash)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, ErrNotFound
 	}
 	return u, err
+}
+
+func (s *Store) UpdateUserPassword(ctx context.Context, id int64, hash string) error {
+	tag, err := s.Pool.Exec(ctx,
+		`UPDATE users SET password_hash = $2 WHERE user_id = $1`, id, hash)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 func (s *Store) ListUsers(ctx context.Context) ([]User, error) {

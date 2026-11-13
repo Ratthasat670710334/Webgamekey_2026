@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"webgames_golang/auth"
+	"webgames_golang/mw"
 	"webgames_golang/store"
 )
 
@@ -93,6 +94,53 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"token": token, "member": memberJSON(m)})
+}
+
+type changePasswordReq struct {
+	CurrentPassword string `json:"currentPassword"`
+	NewPassword     string `json:"newPassword"`
+}
+
+func (h *Handler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	var req changePasswordReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "BAD_JSON", "อ่านกล่อง JSON ไม่ออก")
+		return
+	}
+	if !validPassword(req.NewPassword) {
+		writeError(w, http.StatusBadRequest, "BAD_PASSWORD", "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก ตัวเลข และอักขระพิเศษ")
+		return
+	}
+
+	who := mw.WhoFrom(r.Context())
+	m, err := h.Store.UserByID(r.Context(), who.ID)
+	if errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusUnauthorized, "LOGIN_REQUIRED", "กรุณาเข้าสู่ระบบก่อน")
+		return
+	}
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	if !auth.CheckPassword(m.PasswordHash, req.CurrentPassword) {
+		writeError(w, http.StatusUnauthorized, "CURRENT_PASSWORD_INVALID", "รหัสผ่านปัจจุบันไม่ถูกต้อง")
+		return
+	}
+
+	hash, err := auth.HashPassword(req.NewPassword)
+	if err != nil {
+		internal(w, err)
+		return
+	}
+	if err := h.Store.UpdateUserPassword(r.Context(), who.ID, hash); errors.Is(err, store.ErrNotFound) {
+		writeError(w, http.StatusUnauthorized, "LOGIN_REQUIRED", "กรุณาเข้าสู่ระบบก่อน")
+		return
+	} else if err != nil {
+		internal(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func validPassword(password string) bool {

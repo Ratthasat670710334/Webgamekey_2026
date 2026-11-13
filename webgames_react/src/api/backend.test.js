@@ -61,6 +61,16 @@ test('ไม่ใช่ 2xx ต้องโยน Error ที่มีข้�
   const err = await login('a@b.c', 'wrong').catch(e => e);
   expect(err.status).toBe(401);
 });
+test('เก็บ error code จาก API ไว้ให้หน้าเว็บแยกประเภทข้อผิดพลาดได้', async () => {
+  fetch.mockResolvedValue(fakeResponse(409, {
+    error: { code: 'GAME_IN_USE', message: 'เกมนี้มีประวัติการซื้อแล้ว' }
+  }));
+
+  const err = await apiFetch('/api/admin/games/1', { method: 'DELETE' }).catch(e => e);
+
+  expect(err.code).toBe('GAME_IN_USE');
+  expect(err.message).toBe('เกมนี้มีประวัติการซื้อแล้ว');
+});
 test('server ตอบมาไม่ใช่ JSON (เช่น ลืมรัน mock) ต้องได้ข้อความที่เข้าใจได้ ไม่ใช่ SyntaxError', async () => {
   fetch.mockResolvedValue({ ok: false, status: 404, json: () => Promise.reject(new SyntaxError('Unexpected token <')) });
 

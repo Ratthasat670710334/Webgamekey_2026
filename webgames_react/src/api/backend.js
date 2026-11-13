@@ -31,6 +31,7 @@ export async function apiFetch(path, { method = 'GET', body, token } = {}) {
 
     const err = new Error(data.error?.message ?? data.error ?? `server ตอบกลับ ${res.status}`);
     err.status = res.status;                                 //    แนบเลขไว้ให้หน้าเว็บใช้ต่อ
+    err.code = data.error?.code;
     throw err;
   }
   return data;

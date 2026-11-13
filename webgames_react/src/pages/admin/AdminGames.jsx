@@ -23,6 +23,7 @@ function AdminGames() {
   const [form, setForm] = useState(emptyGame);
   const [editId, setEditId] = useState(null);
   const [error, setError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
   const [loading, setLoading] = useState(true);
 
   async function loadGames() {
@@ -112,7 +113,11 @@ function AdminGames() {
       setGames(games.filter((game) => game.id !== id));
       if (editId === id) resetForm();
     } catch (err) {
-      setError(err.message);
+      if (err.code === 'GAME_IN_USE') {
+        setDeleteError('เกมนี้มีประวัติการซื้อแล้ว จึงไม่สามารถลบได้');
+      } else {
+        setError(err.message);
+      }
     }
   }
 
@@ -126,6 +131,26 @@ function AdminGames() {
       </div>
 
       {error && <p className="mb-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-400">{error}</p>}
+
+      {deleteError && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4" role="alertdialog" aria-modal="true" aria-labelledby="delete-error-title">
+          <div className="w-full max-w-md rounded-2xl border border-red-500/30 bg-[#14141f] p-6 text-white shadow-2xl">
+            <h3 id="delete-error-title" className="text-lg font-bold text-red-400">
+              ไม่สามารถลบเกมได้
+            </h3>
+            <p className="mt-3 text-sm text-gray-300">{deleteError}</p>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setDeleteError('')}
+                className="rounded-lg bg-purple-600 px-5 py-2 text-sm font-semibold hover:bg-purple-500"
+              >
+                ตกลง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form
         onSubmit={handleSubmit}

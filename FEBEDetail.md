@@ -97,19 +97,6 @@ JSON response → React state → หน้าเว็บ
 | [`src/components/FeaturedCarousel.jsx`](webgames_react/src/components/FeaturedCarousel.jsx) | รับเกมแนะนำ → แบ่งหน้าใน client → แสดง GameCard |
 | [`src/components/admin/AdminStates.jsx`](webgames_react/src/components/admin/AdminStates.jsx) | UI ใช้ซ้ำสำหรับ ErrorBox, Loading, ConfirmBox และ class ของปุ่ม/ฟอร์ม |
 
-### ไฟล์ประกอบ/ไฟล์เก่าฝั่ง Frontend
-
-| ไฟล์/กลุ่ม | สถานะ |
-|---|---|
-| [`src/data/games.js`](webgames_react/src/data/games.js), [`src/data/gameCatalog.js`](webgames_react/src/data/gameCatalog.js) | ชุดเกมตัวอย่างและ helper `localStorage`; ไม่ใช่แหล่ง catalog ที่ Home/AdminGames ใช้ในเส้นทางปัจจุบัน |
-| [`src/data/keyInventory.js`](webgames_react/src/data/keyInventory.js) | helper สร้าง/เก็บ keys ใน browser; ไม่ใช่คลังจริงที่ Go ใช้ขาย |
-| [`src/api/cache.js`](webgames_react/src/api/cache.js), [`src/api/tmdb.js`](webgames_react/src/api/tmdb.js) | cache/TMDB สำหรับ MovieHub; ไม่ใช่ client ของ GAMEKEY |
-| [`src/pages/admin/AdminMovies.jsx`](webgames_react/src/pages/admin/AdminMovies.jsx), [`src/pages/admin/AdminMovieForm.jsx`](webgames_react/src/pages/admin/AdminMovieForm.jsx) | หน้าเก่าจัดการ “หนัง”; ไม่ได้ถูก mount ใน `App.jsx` และเรียกฟังก์ชัน Movie API ที่ไม่มีใน `backend.js` ปัจจุบัน |
-| [`mock/server.js`](webgames_react/mock/server.js), [`mock/movies.json`](webgames_react/mock/movies.json) | mock รุ่น MovieHub: ใช้ `/api/movies`, `/api/me` และ port 4000; สัญญาไม่ตรงกับ Go GAMEKEY ที่ใช้ `/api/games` และ port 8080 จึงใช้แทน Go API ปัจจุบันไม่ได้ |
-| `src/**/*.test.*`, `src/setupTests.js` | ชุดทดสอบ React; ใช้ mock API/DOM ไม่ใช่ runtime |
-| `public/`, `build/` | ไฟล์ static และ build output; โดยปกติแก้ source ใน `src/` แล้วค่อย build |
-| [`README-week9.md`](webgames_react/README-week9.md), [`docs/`](webgames_react/docs) | เอกสารประกอบ/ประวัติ MovieHub บางส่วน ไม่ใช่ route contract ปัจจุบันทุกหัวข้อ |
-
 ## Backend — ไฟล์และหน้าที่
 
 ### Startup, routing และ middleware
